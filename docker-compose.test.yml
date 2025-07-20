@@ -1,0 +1,47 @@
+services:
+  mysql:
+      image: mysql:8.3
+      container_name: Martita_IA_MySQL
+      ports:
+        - "3306:3306"
+      env_file:
+        - ./mysql/.env
+      volumes:
+        - /c/Users/omigc/Documents/MARTITA_IA/datos_docker/mysql:/var/lib/mysql
+        - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      healthcheck:
+        test: ["CMD-SHELL", "mysqladmin ping -h localhost -u $${MYSQL_USER} -p$${MYSQL_PASSWORD}"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+
+  backend:
+      build:
+        context: ./MARTITA_IA_API
+        dockerfile: Dockerfile
+      container_name: Martita_IA_Backend
+      ports:
+        - "8000:8000"
+      env_file:
+        - ./MARTITA_IA_API/.env
+
+  flowise:
+      container_name: Martita_IA_Flowise
+      image: flowiseai/flowise
+      ports:
+        - "${PORT}:${PORT}"
+      env_file:
+        - .env
+      volumes:
+        - /c/Users/omigc/Documents/MARTITA_IA/datos_docker/flowise:/root/.flowise
+      restart: unless-stopped
+
+  frontend:
+      build:
+        context: ./MARTITA_IA_Frontend
+        dockerfile: Dockerfile
+      container_name: Martita_IA_Frontend
+      ports:
+        - "5174:5174"
+      depends_on:
+        - backend

@@ -1,0 +1,11 @@
+# Ignorar todos los __pycache__ en cualquier subdirectorio
+venv/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+*.db
+*.log
+.DS_Store
+.env
