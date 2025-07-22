@@ -1,188 +1,202 @@
 <template>
-  <div class="users-view">
+  <div class="profile-view">
     <header class="view-header">
-      <h1>Gestión de Usuarios</h1>
-      <button class="action-btn">+ Invitar Usuario</button>
+      <h1>Mi Perfil</h1>
+      <p>Actualiza tu información personal y tu contraseña.</p>
     </header>
 
-    <div v-if="usersStore.isLoading || directionsStore.isLoading" class="loading-message">Cargando...</div>
-    <div v-else-if="usersStore.error || directionsStore.error" class="error-message">
-      {{ usersStore.error || directionsStore.error }}
-    </div>
+    <div v-if="usersStore.isLoading" class="loading-message">Cargando perfil...</div>
+    <div v-else-if="usersStore.error" class="error-message">{{ usersStore.error }}</div>
 
-    <div v-else-if="usersStore.users.length > 0" class="users-grid">
-      <div v-for="user in usersStore.users" :key="user.id_usuario" class="user-card">
-        <div class="card-header">
-          <div class="user-info">
-            <h3 class="user-name">{{ user.nombre || 'Usuario sin nombre' }}</h3>
-            <p class="user-email">{{ user.email }}</p>
+    <div v-else-if="profileData" class="profile-container">
+      <form @submit.prevent="handleUpdateProfile" class="profile-form">
+
+        <div class="form-section">
+          <h3>Información Personal</h3>
+          <div class="form-group">
+            <label for="name">Nombre</label>
+            <input id="name" type="text" v-model="profileData.nombre" />
           </div>
-          <span :class="['status-badge', user.estado === 1 ? 'active' : 'inactive']">
-            {{ user.estado === 1 ? 'Activo' : 'Inactivo' }}
-          </span>
+          <div class="form-group">
+            <label for="email">Correo Electrónico</label>
+            <input id="email" type="email" v-model="profileData.email" disabled />
+            <small>El correo electrónico no se puede cambiar.</small>
+          </div>
         </div>
-        <div class="card-body">
-          <p><strong>Fecha de Registro:</strong> {{ formatDate(user.fecha_registro) }}</p>
-          <p><strong>Rol / Dirección:</strong> Supervisor de {{ directionInCharge(user.nombre) }}</p>
-        </div>
-        <div class="card-footer">
-          <button class="card-action-btn edit">📝 Editar</button>
-          <button class="card-action-btn delete">🗑️ Eliminar</button>
-        </div>
-      </div>
-    </div>
 
-    <div v-else class="empty-message">No hay usuarios registrados en el sistema.</div>
+        <div class="form-section">
+          <h3>Cambiar Contraseña</h3>
+          <p class="section-subtitle">Deja estos campos en blanco si no quieres cambiar tu contraseña.</p>
+          <div class="form-group">
+            <label for="new-password">Nueva Contraseña</label>
+            <input id="new-password" type="password" v-model="newPassword" placeholder="••••••••" />
+          </div>
+           <div class="form-group">
+            <label for="confirm-password">Confirmar Nueva Contraseña</label>
+            <input id="confirm-password" type="password" v-model="confirmPassword" placeholder="••••••••" />
+          </div>
+        </div>
+
+        <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
+
+        <div class="form-actions">
+          <button type="submit" class="button-primary">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { useUsersStore } from '@/stores/users';
-import { useDirectionsStore } from '@/stores/directions';
 
 const usersStore = useUsersStore();
-const directionsStore = useDirectionsStore();
 
-// Cuando el componente se carga, pedimos los datos de ambos endpoints
+const profileData = ref(null);
+const newPassword = ref('');
+const confirmPassword = ref('');
+const errorMessage = ref('');
+
+watch(() => usersStore.profile, (newProfile) => {
+  if (newProfile) {
+    profileData.value = { ...newProfile };
+  }
+}, { immediate: true });
+
+
 onMounted(() => {
-  usersStore.fetchUsers();
-  directionsStore.fetchDirections();
+  if (!usersStore.profile) {
+    usersStore.fetchProfile();
+  }
 });
 
-// Función para formatear la fecha que ahora sí funcionará
-const formatDate = (dateString) => {
-  if (!dateString) return 'N/A';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-};
+const handleUpdateProfile = async () => {
+  errorMessage.value = '';
 
-// Función que busca en la lista de direcciones si el nombre de un usuario
-// coincide con el de un responsable, y devuelve el nombre de la dirección.
-const directionInCharge = (userName) => {
-  if (!userName || !directionsStore.directions.length) {
-    return 'Ninguna asignada';
+  // Se valida que las contraseñas coincidan si se han rellenado
+  if (newPassword.value || confirmPassword.value) {
+    if (newPassword.value !== confirmPassword.value) {
+      errorMessage.value = 'Las nuevas contraseñas no coinciden.';
+      return;
+    }
   }
-  const direction = directionsStore.directions.find(dir => dir.responsable === userName);
-  return direction ? direction.nombre : 'Ninguna asignada';
+  // SE HA ELIMINADO LA VALIDACIÓN DE MÍNIMO DE CARACTERES
+
+  const dataToUpdate = {
+    nombre: profileData.value.nombre,
+    email: profileData.value.email,
+  };
+
+  if (newPassword.value) {
+    dataToUpdate.password = newPassword.value;
+  }
+
+  try {
+    await usersStore.updateProfile(dataToUpdate);
+    alert('¡Perfil actualizado con éxito!');
+    newPassword.value = '';
+    confirmPassword.value = '';
+  } catch (error) {
+    errorMessage.value = 'Ocurrió un error al actualizar el perfil.';
+    console.error("Error al actualizar el perfil:", error);
+  }
 };
 </script>
 
 <style scoped>
-/* Estilos completos y funcionales */
-.users-view {
+/* ESTILOS DE COLOR CORREGIDOS */
+.profile-view {
   width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  color: #2c3e50; /* Color de texto base */
 }
 .view-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 2rem;
+  border-bottom: 1px solid #e9ecef;
+  padding-bottom: 1rem;
 }
 .view-header h1 {
   font-size: 1.8rem;
   color: #2c3e50;
   margin: 0;
 }
-.action-btn {
+.view-header p {
+  color: #6c757d;
+  margin-top: 0.5rem;
+}
+.profile-container {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.07);
+}
+.profile-form {
+  padding: 2rem;
+}
+.form-section {
+  margin-bottom: 2rem;
+}
+.form-section h3 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #e9ecef;
+  padding-bottom: 1rem;
+  color: #2c3e50;
+}
+.section-subtitle {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-top: -1rem;
+  margin-bottom: 1rem;
+}
+.form-group {
+  margin-bottom: 1rem;
+}
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #2c3e50; /* Color de las etiquetas */
+}
+input {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  box-sizing: border-box;
+  color: #2c3e50; /* Color del texto dentro del input */
+}
+input:disabled {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+}
+small {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2rem;
+}
+.button-primary {
   background-color: #42b983;
   color: white;
   border: none;
-  padding: 0.8rem 1.2rem;
+  padding: 0.8rem 1.5rem;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
 }
-.action-btn:hover {
-  background-color: #34966b;
+.error-message {
+  color: #c0392b;
+  margin-top: 1rem;
+  text-align: center;
 }
-.users-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.5rem;
-}
-.user-card {
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
-  border: 1px solid #e9ecef;
-  display: flex;
-  flex-direction: column;
-}
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 1.5rem;
-  border-bottom: 1px solid #e9ecef;
-}
-.user-name {
-  margin: 0 0 0.25rem 0;
-  font-size: 1.2rem;
-  color: #2c3e50;
-}
-.user-email {
-  margin: 0;
-  color: #6c757d;
-  font-size: 0.9rem;
-}
-.status-badge {
-  padding: 0.3rem 0.8rem;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 0.8rem;
-  flex-shrink: 0;
-}
-.status-badge.active {
-  background-color: #e7f5ec;
-  color: #28a745;
-}
-.status-badge.inactive {
-  background-color: #f8d7da;
-  color: #dc3545;
-}
-.card-body {
-  padding: 1.5rem;
-  font-size: 0.9rem;
-  color: #495057;
-  flex-grow: 1;
-}
-.card-body p {
-  margin: 0 0 0.5rem 0;
-}
-.card-footer {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #e9ecef;
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  background-color: #f8f9fa;
-  border-bottom-left-radius: 12px;
-  border-bottom-right-radius: 12px;
-}
-.card-action-btn {
-  background: white;
-  border: 1px solid #ced4da;
-  padding: 0.4rem 0.8rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-}
-.card-action-btn.delete {
-  background-color: #fff5f5;
-  border-color: #e53e3e;
-  color: #e53e3e;
-}
-.loading-message, .empty-message {
+.loading-message {
   text-align: center;
   padding: 3rem;
   color: #6c757d;
-  background-color: white;
-  border-radius: 12px;
 }
 </style>

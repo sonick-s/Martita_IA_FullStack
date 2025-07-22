@@ -7,7 +7,7 @@ services:
       env_file:
         - ./mysql/.env
       volumes:
-        - /c/Users/omigc/Documents/MARTITA_IA/datos_docker/mysql:/var/lib/mysql
+        - /c/MARTITA_IA/datos_docker/mysql:/var/lib/mysql
         - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
       healthcheck:
         test: ["CMD-SHELL", "mysqladmin ping -h localhost -u $${MYSQL_USER} -p$${MYSQL_PASSWORD}"]
@@ -37,7 +37,7 @@ services:
       env_file:
         - .env
       volumes:
-        - /c/Users/omigc/Documents/MARTITA_IA/datos_docker/flowise:/root/.flowise
+        - /c/MARTITA_IA/datos_docker/flowise:/root/.flowise
       restart: unless-stopped
       depends_on:
         - backend

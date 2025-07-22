@@ -8,5 +8,5 @@ class Usuarios(Base):
     nombre = Column(String(100))
     email = Column(String(150))
     password = Column(String(255), nullable=False)
-    estado = Column(Integer, default=1)
-    fecha_registro = Column(DateTime)
+    estado = Column(Integer, nullable=True, default=1)
+    fecha_registro = Column(DateTime, nullable=True)
