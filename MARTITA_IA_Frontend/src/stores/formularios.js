@@ -18,6 +18,9 @@ export const useFormulariosStore = defineStore('formularios', {
         throw err;
       }
     },
+    async updateFormulario(id, data) { return apiClient.put(`/formularios-tramite/${id}`, data); },
+    async deleteFormulario(id) { return apiClient.delete(`/formularios-tramite/${id}`); },
+
     // Aquí irán luego las acciones de update y delete para formularios individuales
   },
 });

@@ -1,17 +1,21 @@
 <template>
   <div class="editor-view">
-    <div v-if="proceduresStore.isLoading && !procedureData" class="loading-container">
+    <div v-if="isLoading" class="loading-container">
       <p>Cargando información del trámite...</p>
     </div>
+
     <div v-else-if="!procedureData" class="error-container">
-      <p>No se pudo cargar la información del trámite.</p>
-      <router-link to="/dashboard/procedures" class="back-link">&larr; Volver</router-link>
+      <p>No se pudo cargar la información del trámite. Es posible que no exista.</p>
+      <router-link to="/dashboard/procedures" class="back-link">&larr; Volver a la lista</router-link>
     </div>
 
     <div v-else class="editor-container">
       <header class="editor-header">
         <h1>Editor de Trámite: {{ procedureData.nombre }}</h1>
-        <router-link to="/dashboard/procedures" class="back-link">&larr; Volver</router-link>
+        <div class="header-actions">
+          <span class="save-status">{{ saveStatus }}</span>
+          <router-link to="/dashboard/procedures" class="back-link">&larr; Volver a la lista</router-link>
+        </div>
       </header>
 
       <section class="form-section">
@@ -73,56 +77,76 @@ import { useProceduresStore } from '@/stores/procedures';
 
 const route = useRoute();
 const proceduresStore = useProceduresStore();
+
 const procedureData = ref(null);
+const isLoading = ref(true);
+const saveStatus = ref('Todos los cambios guardados'); // Estado para el feedback
+let debounceTimer = null;
 
-// Observamos cambios en el 'activeProcedure' de la tienda para actualizar los datos locales
-watch(() => proceduresStore.activeProcedure, (newVal) => {
-  if (newVal) {
-    procedureData.value = JSON.parse(JSON.stringify(newVal));
+// --- Carga de datos inicial ---
+onMounted(async () => {
+  isLoading.value = true;
+  const procedureId = route.params.id;
+  if (procedureId) {
+    await proceduresStore.fetchProcedureById(procedureId);
+    if (proceduresStore.activeProcedure) {
+      procedureData.value = JSON.parse(JSON.stringify(proceduresStore.activeProcedure));
+    }
   }
-}, { immediate: true });
+  isLoading.value = false;
+});
+
+// --- Lógica de Guardado Automático (Autosave) ---
+watch(procedureData, async (newData, oldData) => {
+  if (!newData || !oldData) return;
+
+  saveStatus.value = 'Guardando...';
+  clearTimeout(debounceTimer);
+
+  debounceTimer = setTimeout(async () => {
+    try {
+      // Creamos una copia sin las listas para actualizar solo los datos principales
+      const { requisitos, pasos, formularios, ...mainData } = newData;
+      await proceduresStore.updateProcedure(mainData);
+      saveStatus.value = '✅ Guardado';
+    } catch (error) {
+      saveStatus.value = '❌ Error al guardar';
+      console.error("Error en autoguardado:", error);
+    }
+  }, 1500); // Espera 1.5 segundos
+}, { deep: true });
 
 
-// --- Lógica para Requisitos ---
+// --- Lógica para las listas dinámicas ---
 const addRequisito = () => {
   if (!procedureData.value) return;
+  if (!procedureData.value.requisitos) procedureData.value.requisitos = [];
   procedureData.value.requisitos.push({ id_requisito: -Date.now(), requisito: '', contexto: '' });
 };
 const removeRequisito = (index) => {
-  if (!procedureData.value) return;
+  if (!procedureData.value?.requisitos) return;
   procedureData.value.requisitos.splice(index, 1);
 };
 
-
-// --- Lógica para Pasos ---
 const addPaso = () => {
   if (!procedureData.value) return;
+  if (!procedureData.value.pasos) procedureData.value.pasos = [];
   procedureData.value.pasos.push({ id_paso: -Date.now(), paso: '', contexto: '' });
 };
 const removePaso = (index) => {
-  if (!procedureData.value) return;
+  if (!procedureData.value?.pasos) return;
   procedureData.value.pasos.splice(index, 1);
 };
 
-
-// --- Lógica para Formularios ---
 const addFormulario = () => {
   if (!procedureData.value) return;
+  if (!procedureData.value.formularios) procedureData.value.formularios = [];
   procedureData.value.formularios.push({ id_formulario: -Date.now(), url: '', contexto: '' });
 };
 const removeFormulario = (index) => {
-  if (!procedureData.value) return;
+  if (!procedureData.value?.formularios) return;
   procedureData.value.formularios.splice(index, 1);
 };
-
-
-// --- Carga de datos inicial al montar el componente ---
-onMounted(() => {
-  const procedureId = route.params.id;
-  if (procedureId) {
-    proceduresStore.fetchProcedureById(procedureId);
-  }
-});
 </script>
 
 <style scoped>
@@ -131,10 +155,12 @@ onMounted(() => {
   padding: 1rem;
   box-sizing: border-box;
 }
+
 .editor-container {
   max-width: 900px;
   margin: 0 auto;
 }
+
 .editor-header {
   display: flex;
   justify-content: space-between;
@@ -143,11 +169,25 @@ onMounted(() => {
   padding-bottom: 1.5rem;
   border-bottom: 1px solid #e9ecef;
 }
-h1 {
+
+.editor-header h1 {
   font-size: 1.8rem;
   color: #2c3e50;
   margin: 0;
 }
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.save-status {
+  font-style: italic;
+  color: #6c757d;
+  transition: color 0.3s;
+}
+
 .back-link {
   text-decoration: none;
   font-weight: 600;
@@ -156,9 +196,11 @@ h1 {
   border-radius: 8px;
   transition: background-color 0.2s;
 }
+
 .back-link:hover {
   background-color: #f0f4f8;
 }
+
 .form-section {
   background: white;
   padding: 2rem;
@@ -166,28 +208,35 @@ h1 {
   margin-bottom: 2rem;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
+
 .form-section h2 {
   margin-top: 0;
   border-bottom: 1px solid #e9ecef;
   padding-bottom: 1rem;
   margin-bottom: 1.5rem;
+  color: #2c3e50;
 }
+
 .section-subtitle {
   margin-top: -1rem;
   margin-bottom: 1.5rem;
   color: #6c757d;
   font-size: 0.9rem;
 }
+
 .form-group {
   margin-bottom: 1.5rem;
 }
+
 label {
   display: block;
   font-weight: 600;
   margin-bottom: 0.5rem;
   color: #495057;
 }
-input, textarea {
+
+input,
+textarea {
   width: 100%;
   padding: 0.8rem;
   border: 1px solid #ced4da;
@@ -195,15 +244,18 @@ input, textarea {
   box-sizing: border-box;
   font-size: 1rem;
 }
+
 .dynamic-item {
   display: flex;
   gap: 1rem;
   margin-bottom: 1rem;
   align-items: center;
 }
+
 .dynamic-item .main-input {
   flex-grow: 1;
 }
+
 .remove-button {
   background-color: #f8d7da;
   color: #dc3545;
@@ -218,6 +270,7 @@ input, textarea {
   align-items: center;
   justify-content: center;
 }
+
 .add-button {
   background: #e9ecef;
   border: 1px solid #ced4da;
@@ -227,7 +280,9 @@ input, textarea {
   font-weight: 600;
   margin-top: 1rem;
 }
-.loading-container, .error-container {
+
+.loading-container,
+.error-container {
   text-align: center;
   padding: 4rem;
 }

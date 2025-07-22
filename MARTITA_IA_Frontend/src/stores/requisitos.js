@@ -17,6 +17,9 @@ export const useRequisitosStore = defineStore('requisitos', {
         throw err;
       }
     },
+    async updateRequisito(id, data) { return apiClient.put(`/requisitos-tramite/${id}`, data); },
+async deleteRequisito(id) { return apiClient.delete(`/requisitos-tramite/${id}`); },
+
     // Aquí irán luego las acciones de update y delete para requisitos individuales
   },
 });

@@ -17,6 +17,9 @@ export const usePasosStore = defineStore('pasos', {
         throw err;
       }
     },
+    async updatePaso(id, data) { return apiClient.put(`/pasos-tramite/${id}`, data); },
+async deletePaso(id) { return apiClient.delete(`/pasos-tramite/${id}`); },
+
     // Aquí irán luego las acciones de update y delete para pasos individuales
   },
 });
