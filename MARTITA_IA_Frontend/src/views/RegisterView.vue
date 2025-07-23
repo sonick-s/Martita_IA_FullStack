@@ -2,10 +2,11 @@
   <div class="register-container">
     <div class="register-card">
       <div class="card-header">
-        <img src="@/assets/logo.svg" alt="Vue Logo" class="logo" />
+        <img src="@/assets/saludo.png" alt="Vue Logo" class="logo" />
         <h2>Crear Nueva Cuenta</h2>
         <p>Es rápido y fácil. Únete a Martita AI.</p>
       </div>
+
       <form @submit.prevent="handleRegister" class="card-body">
         <div class="form-group">
           <label for="name">Nombre Completo</label>
@@ -23,13 +24,17 @@
           <label for="confirmPassword">Confirmar Contraseña</label>
           <input type="password" id="confirmPassword" v-model="confirmPassword" required />
         </div>
-        <button type="submit" :disabled="isLoading">
-          {{ isLoading ? 'Creando cuenta...' : 'Registrarse' }}
-        </button>
+
+        <div class="form-actions">
+          <router-link to="/login" class="btn btn-secondary">
+            Iniciar Sesión
+          </router-link>
+          <button type="submit" :disabled="isLoading" class="btn btn-primary">
+            {{ isLoading ? 'Creando...' : 'Registrarse' }}
+          </button>
+        </div>
       </form>
-      <div class="card-footer">
-        <p>¿Ya tienes una cuenta? <router-link to="/login">Inicia sesión aquí</router-link></p>
-      </div>
+
       <div v-if="errorMessage" class="error-message">
         <p>{{ errorMessage }}</p>
       </div>
@@ -48,17 +53,16 @@ const router = useRouter();
 const name = ref('');
 const email = ref('');
 const password = ref('');
-const confirmPassword = ref(''); // Variable para el nuevo campo
+const confirmPassword = ref('');
 const errorMessage = ref('');
 const isLoading = ref(false);
 
 const handleRegister = async () => {
   errorMessage.value = '';
 
-  // Verificación: las contraseñas deben coincidir
   if (password.value !== confirmPassword.value) {
     errorMessage.value = 'Las contraseñas no coinciden.';
-    return; // Detenemos el proceso si no coinciden
+    return;
   }
 
   isLoading.value = true;
@@ -102,7 +106,7 @@ const handleRegister = async () => {
 }
 
 .logo {
-  height: 50px;
+  height: 90px;
   margin-bottom: 1rem;
 }
 
@@ -143,37 +147,47 @@ input:focus {
   outline: none;
 }
 
-button {
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.btn {
   width: 100%;
   padding: 0.9rem;
-  background-color: #42b983;
-  color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   font-size: 1rem;
   font-weight: 700;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, box-shadow 0.2s;
+  text-align: center;
+  text-decoration: none;
 }
 
-button:hover:not(:disabled) {
+.btn-primary {
+  background-color: #42b983;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
   background-color: #34966b;
 }
 
-.card-footer {
-  text-align: center;
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e9ecef;
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
 }
 
-.card-footer a {
-  color: #42b983;
-  font-weight: 600;
-  text-decoration: none;
+.btn-secondary:hover {
+  background-color: #5a6268;
 }
-.card-footer a:hover {
-  text-decoration: underline;
+
+.btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
 }
 
 .error-message {
