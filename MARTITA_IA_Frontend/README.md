@@ -33,10 +33,10 @@ Login
 - [ ] En registrar el logo y validar los campos de contraseña para que tenga al menos 8 caracteres
 
 Reglas del Bot
-- [ ] 
+- [X] 
 Tramites
 - [ ] En crear Direccion validar el campo numero de telefono
-- [ ] Arreglarbarra de navegacion
+- [ ] Arreglar barra de navegacion
 - [ ] Dentro de las targetas colocar un boton para visualizar los tramites correspondientes a la direccion 
 - [ ] La opcion Borrar Direccion no debe eliminar la direccion si no actualizar el estado a -1 para que no lo muestre en la lista de direcciones 
 - [ ] Al crear un tramite los campos responsable , correo y telefono pueden enviarse null, (posible cambio en backend)
@@ -46,5 +46,5 @@ Tramites
 - [ ] los campos formularios no guardan datos
 
 Usuarios
-- [ ] solo debe mostrar la informacion dle usuario Administrador, ya que la aplicaicon esta daptada solo para administrador por ahora 
+- [X] solo debe mostrar la informacion dle usuario Administrador, ya que la aplicaicon esta daptada solo para administrador por ahora 
 
