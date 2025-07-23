@@ -18,7 +18,7 @@
         </div>
         <div class="form-group">
           <label for="password">Contraseña</label>
-          <input type="password" id="password" v-model="password" required />
+          <input type="password" id="password" v-model="password" required minlength="8" />
         </div>
         <div class="form-group">
           <label for="confirmPassword">Confirmar Contraseña</label>
@@ -59,6 +59,11 @@ const isLoading = ref(false);
 
 const handleRegister = async () => {
   errorMessage.value = '';
+
+  if (password.value.length < 8) {
+    errorMessage.value = 'La contraseña debe tener al menos 8 caracteres.';
+    return;
+  }
 
   if (password.value !== confirmPassword.value) {
     errorMessage.value = 'Las contraseñas no coinciden.';

@@ -4,6 +4,11 @@
       <div class="sidebar-header">
         <h2>Martita AI</h2>
       </div>
+
+      <div class="logo-container">
+        <img src="@/assets/feliz.png" alt="Logo Martita AI" class="logo" />
+      </div>
+
       <nav class="sidebar-nav">
         <router-link to="/dashboard/rules">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
@@ -18,8 +23,8 @@
           <span>Historial</span>
         </router-link>
         <router-link to="/dashboard/users">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          <span>Usuarios</span>
+           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+  <span>Perfil</span>
         </router-link>
       </nav>
       <div class="sidebar-footer">
@@ -62,26 +67,38 @@ const handleLogout = () => {
   flex-direction: column;
   padding: 1.5rem;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
 }
 
+/* Título centrado */
 .sidebar-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 2.5rem;
-  padding-left: 0.5rem;
-}
-
-.logo {
-  height: 50px; /* Ajusta según el tamaño de tu GIF */
-  width: 50px;
-  object-fit: cover;
+  text-align: center;
+  margin-bottom: 1.5rem;
 }
 
 .sidebar-header h2 {
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   margin: 0;
   color: #2c3e50;
+}
+
+/* Contenedor para centrar el logo */
+.logo-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2.5rem;
+}
+
+/* Estilos del logo */
+.logo {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 4px solid white;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1),
+              0 0 25px rgba(66, 185, 131, 0.7);
+  background-color: black; /* <-- LÍNEA AÑADIDA */
 }
 
 /* Navegación */
@@ -92,11 +109,10 @@ const handleLogout = () => {
   flex-grow: 1;
 }
 
-/* CAMBIO: Estilos para los enlaces con iconos */
 .sidebar-nav a {
-  display: flex; /* Para alinear icono y texto */
+  display: flex;
   align-items: center;
-  gap: 1rem; /* Espacio entre icono y texto */
+  gap: 1rem;
   padding: 0.8rem 1rem;
   border-radius: 8px;
   text-decoration: none;
@@ -105,7 +121,6 @@ const handleLogout = () => {
   transition: background-color 0.2s, color 0.2s;
 }
 
-/* CAMBIO: Estilos para los iconos SVG */
 .sidebar-nav a svg {
   width: 20px;
   height: 20px;
@@ -123,7 +138,6 @@ const handleLogout = () => {
   font-weight: 600;
 }
 
-/* CAMBIO: El icono también cambia de color cuando el enlace está activo */
 .sidebar-nav a.router-link-exact-active svg {
   stroke: white;
 }

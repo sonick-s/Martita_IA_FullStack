@@ -75,14 +75,18 @@ const handleLogin = async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: white;
+  background-color: #f0f2f5;
+  position: relative;
+  overflow: hidden;
 }
 
 .vue-logo {
   width: 70%;
   max-width: 500px;
   height: auto;
-  filter: drop-shadow(0 0 15px rgb(22, 133, 3));
+  filter: drop-shadow(0 0 50px rgba(45, 123, 0, 0.923));
+  position: relative;
+  z-index: 1;
 }
 
 .right-pane {
@@ -90,7 +94,7 @@ const handleLogin = async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: white;
+  background-color: #f0f2f5;
 }
 
 .login-card {
