@@ -74,77 +74,113 @@
 import { onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useProceduresStore } from '@/stores/procedures';
+// Las otras stores siguen siendo necesarias para el autoguardado, pero no para la carga
+import { useRequisitosStore } from '@/stores/requisitos';
+import { usePasosStore } from '@/stores/pasos';
+import { useFormulariosStore } from '@/stores/formularios';
 
 const route = useRoute();
 const proceduresStore = useProceduresStore();
+const requisitosStore = useRequisitosStore();
+const pasosStore = usePasosStore();
+const formulariosStore = useFormulariosStore();
 
 const procedureData = ref(null);
 const isLoading = ref(true);
-const saveStatus = ref('Todos los cambios guardados'); // Estado para el feedback
+const saveStatus = ref('Todos los cambios guardados');
 let debounceTimer = null;
 
-// --- Carga de datos inicial ---
+// --- Carga de datos SÚPER SIMPLIFICADA ---
 onMounted(async () => {
   isLoading.value = true;
   const procedureId = route.params.id;
   if (procedureId) {
+    // 👇 ¡HACEMOS LA ÚNICA LLAMADA QUE YA OBTIENE TODO!
     await proceduresStore.fetchProcedureById(procedureId);
+
+    // Si la llamada fue exitosa, activeProcedure contendrá todo
     if (proceduresStore.activeProcedure) {
+      // Usamos los datos completos (incluyendo listas) para poblar el estado local
       procedureData.value = JSON.parse(JSON.stringify(proceduresStore.activeProcedure));
     }
+    // 👇 YA NO NECESITAMOS LAS OTRAS LLAMADAS (Promise.all)
   }
   isLoading.value = false;
 });
 
-// --- Lógica de Guardado Automático (Autosave) ---
-watch(procedureData, async (newData, oldData) => {
-  if (!newData || !oldData) return;
+
+// --- Lógica de Autoguardado Inteligente (SIN CAMBIOS) ---
+watch(procedureData, (newData, oldData) => {
+  if (!newData || !oldData || isLoading.value) return;
 
   saveStatus.value = 'Guardando...';
   clearTimeout(debounceTimer);
 
   debounceTimer = setTimeout(async () => {
     try {
-      // Creamos una copia sin las listas para actualizar solo los datos principales
-      const { requisitos, pasos, formularios, ...mainData } = newData;
-      await proceduresStore.updateProcedure(mainData);
-      saveStatus.value = '✅ Guardado';
+      await syncAllChanges(newData, oldData);
+      saveStatus.value = '✅ Todos los cambios guardados';
     } catch (error) {
       saveStatus.value = '❌ Error al guardar';
       console.error("Error en autoguardado:", error);
     }
-  }, 1500); // Espera 1.5 segundos
+  }, 1500);
 }, { deep: true });
 
+async function syncAllChanges(newData, oldData) {
+  const { requisitos, pasos, formularios, ...mainData } = newData;
+  const oldRequisitos = oldData.requisitos || [];
+  const oldPasos = oldData.pasos || [];
+  const oldFormularios = oldData.formularios || [];
 
-// --- Lógica para las listas dinámicas ---
+  await proceduresStore.updateProcedure(mainData);
+  await syncList(requisitos, oldRequisitos, 'id_requisito', requisitosStore);
+  await syncList(pasos, oldPasos, 'id_paso', pasosStore);
+  await syncList(formularios, oldFormularios, 'id_formulario', formulariosStore);
+}
+
+async function syncList(newList, oldList, idKey, store) {
+  const procedureId = route.params.id;
+
+  // Detectar y CREAR/ACTUALIZAR ítems
+  for (const item of newList) {
+    const oldItem = oldList.find(old => old[idKey] === item[idKey]);
+    if (!oldItem) { // Si no estaba antes (ID negativo), es nuevo
+      const { [idKey]: tempId, ...newItemData } = item;
+      await store[`create${store.$id.charAt(0).toUpperCase() + store.$id.slice(1, -1)}`]({ ...newItemData, id_tramite: procedureId });
+    } else if (JSON.stringify(oldItem) !== JSON.stringify(item)) { // Si estaba y cambió
+      await store[`update${store.$id.charAt(0).toUpperCase() + store.$id.slice(1, -1)}`](item);
+    }
+  }
+
+  // Detectar y BORRAR ítems
+  for (const item of oldList) {
+    if (!newList.some(newItem => newItem[idKey] === item[idKey])) {
+      await store[`delete${store.$id.charAt(0).toUpperCase() + store.$id.slice(1, -1)}`](item[idKey]);
+    }
+  }
+}
+
+// --- Lógica para las listas dinámicas (SIN CAMBIOS) ---
 const addRequisito = () => {
-  if (!procedureData.value) return;
   if (!procedureData.value.requisitos) procedureData.value.requisitos = [];
   procedureData.value.requisitos.push({ id_requisito: -Date.now(), requisito: '', contexto: '' });
 };
 const removeRequisito = (index) => {
-  if (!procedureData.value?.requisitos) return;
   procedureData.value.requisitos.splice(index, 1);
 };
-
 const addPaso = () => {
-  if (!procedureData.value) return;
   if (!procedureData.value.pasos) procedureData.value.pasos = [];
   procedureData.value.pasos.push({ id_paso: -Date.now(), paso: '', contexto: '' });
 };
 const removePaso = (index) => {
-  if (!procedureData.value?.pasos) return;
   procedureData.value.pasos.splice(index, 1);
 };
-
 const addFormulario = () => {
-  if (!procedureData.value) return;
   if (!procedureData.value.formularios) procedureData.value.formularios = [];
   procedureData.value.formularios.push({ id_formulario: -Date.now(), url: '', contexto: '' });
 };
 const removeFormulario = (index) => {
-  if (!procedureData.value?.formularios) return;
   procedureData.value.formularios.splice(index, 1);
 };
 </script>

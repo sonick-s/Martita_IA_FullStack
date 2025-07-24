@@ -1,5 +1,3 @@
-// src/stores/formularios.js
-
 import { defineStore } from 'pinia';
 import apiClient from '@/boot/axios';
 
@@ -8,19 +6,30 @@ export const useFormulariosStore = defineStore('formularios', {
     /**
      * Crea un único formulario y lo asocia a un trámite existente.
      * @param {object} formularioData - Debe contener id_tramite, url y contexto.
+     * @returns {Promise<object>} El formulario recién creado.
      */
     async createFormulario(formularioData) {
-      try {
-        const response = await apiClient.post('/formularios-tramite/', formularioData);
-        return response.data; // Devuelve el formulario recién creado
-      } catch (err) {
-        console.error('Error creating formulario:', err);
-        throw err;
-      }
+      const response = await apiClient.post('/formularios-tramite/', formularioData);
+      return response.data;
     },
-    async updateFormulario(id, data) { return apiClient.put(`/formularios-tramite/${id}`, data); },
-    async deleteFormulario(id) { return apiClient.delete(`/formularios-tramite/${id}`); },
 
-    // Aquí irán luego las acciones de update y delete para formularios individuales
+    /**
+     * Actualiza un formulario existente.
+     * @param {number} id - El ID del formulario a actualizar.
+     * @param {object} data - Los datos a actualizar.
+     * @returns {Promise<object>} El formulario actualizado.
+     */
+    async updateFormulario(id, data) {
+      const response = await apiClient.put(`/formularios-tramite/${id}`, data);
+      return response.data;
+    },
+
+    /**
+     * Elimina un formulario por su ID.
+     * @param {number} id - El ID del formulario a eliminar.
+     */
+    async deleteFormulario(id) {
+      await apiClient.delete(`/formularios-tramite/${id}`);
+    },
   },
 });

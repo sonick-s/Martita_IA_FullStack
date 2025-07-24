@@ -39,7 +39,7 @@
           <section class="dynamic-section">
             <label>Requisitos</label>
             <div v-for="(req, index) in requisitos" :key="req.id_requisito || index" class="dynamic-item">
-              <input type="text" v-model="req.requisito" placeholder="Ej: Copia de la cédula" class="main-input">
+              <textarea v-model="req.requisito" placeholder="Ej: Copia de la cédula" rows="2" class="main-input"></textarea>
               <input type="text" v-model="req.contexto" placeholder="Contexto (opcional)">
               <button class="save-item-btn" @click="handleSaveRequisito(index)" :disabled="isItemSaved(req)">
                 {{ isItemSaved(req) ? 'Guardado' : 'Guardar' }}
@@ -51,7 +51,7 @@
           <section class="dynamic-section">
             <label>Pasos</label>
              <div v-for="(paso, index) in pasos" :key="paso.id_paso || index" class="dynamic-item">
-              <input type="text" v-model="paso.paso" placeholder="Ej: Pagar tasa en ventanilla" class="main-input">
+              <textarea v-model="paso.paso" placeholder="Ej: Pagar tasa en ventanilla" rows="2" class="main-input"></textarea>
               <input type="text" v-model="paso.contexto" placeholder="Contexto (opcional)">
               <button class="save-item-btn" @click="handleSavePaso(index)" :disabled="isItemSaved(paso)">
                 {{ isItemSaved(paso) ? 'Guardado' : 'Guardar' }}
@@ -122,10 +122,6 @@ const isItemSaved = (item) => {
          (item.id_formulario && item.id_formulario > 0);
 };
 
-const closeModal = () => {
-  emit('close');
-};
-
 const goToNextStep = async () => {
   isLoading.value = true;
   try {
@@ -144,7 +140,6 @@ const goToNextStep = async () => {
   }
 };
 
-// --- Lógica de Guardado Instantáneo ---
 const handleSaveRequisito = async (index) => {
   const requisito = requisitos.value[index];
   if (isItemSaved(requisito) || !requisito.requisito) return;
@@ -155,6 +150,8 @@ const handleSaveRequisito = async (index) => {
   } catch (error) {
     console.error("Error al guardar requisito:", error);
     alert('No se pudo guardar el requisito.');
+    // Lanzamos el error para que Promise.all lo capture si es necesario
+    throw error;
   }
 };
 
@@ -168,6 +165,7 @@ const handleSavePaso = async (index) => {
   } catch (error) {
     console.error("Error al guardar paso:", error);
     alert('No se pudo guardar el paso.');
+    throw error;
   }
 };
 
@@ -181,14 +179,54 @@ const handleSaveFormulario = async (index) => {
   } catch (error) {
     console.error("Error al guardar formulario:", error);
     alert('No se pudo guardar el formulario.');
+    throw error;
   }
+};
+
+// 👇 FUNCIÓN ACTUALIZADA Y MEJORADA
+const closeModal = async () => {
+  const savePromises = [];
+
+  requisitos.value.forEach((req, index) => {
+    if (!isItemSaved(req) && req.requisito) {
+      savePromises.push(handleSaveRequisito(index));
+    }
+  });
+
+  pasos.value.forEach((paso, index) => {
+    if (!isItemSaved(paso) && paso.paso) {
+      savePromises.push(handleSavePaso(index));
+    }
+  });
+
+  formularios.value.forEach((form, index) => {
+    if (!isItemSaved(form) && form.url) {
+      savePromises.push(handleSaveFormulario(index));
+    }
+  });
+
+  try {
+    if (savePromises.length > 0) {
+      // Muestra un indicador de carga si lo deseas
+      // isLoading.value = true;
+      await Promise.all(savePromises);
+    }
+  } catch (error) {
+    console.error("Error al guardar los ítems pendientes al cerrar:", error);
+    // Ya se mostró una alerta en la función de guardado individual.
+    // isLoading.value = false;
+    return; // Detiene el cierre si hubo un error.
+  }
+
+  // isLoading.value = false;
+  emit('close');
 };
 </script>
 
 <style scoped>
-/* Los estilos se mantienen igual */
+/* Estilos para el nuevo modal de asistente */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-.modal-content { background: white; border-radius: 12px; width: 100%; max-width: 700px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: flex; flex-direction: column; max-height: 90vh; overflow: hidden; }
+.modal-content { background: white; border-radius: 12px; width: 100%; max-width: 800px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: flex; flex-direction: column; max-height: 90vh; overflow: hidden; }
 .modal-header { flex-shrink: 0; padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e9ecef; }
 .modal-header h2 { margin: 0; font-size: 1.5rem; color: #2c3e50; }
 .close-button { background: none; border: none; font-size: 2rem; cursor: pointer; color: #6c757d; }

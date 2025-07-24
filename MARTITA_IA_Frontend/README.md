@@ -40,8 +40,8 @@ Tramites
 - [ ] Dentro de las targetas colocar un boton para visualizar los tramites correspondientes a la direccion 
 - [ ] La opcion Borrar Direccion no debe eliminar la direccion si no actualizar el estado a -1 para que no lo muestre en la lista de direcciones 
 - [X] Al crear un tramite los campos responsable , correo y telefono pueden enviarse null, (posible cambio en backend)
-- [ ] En crear un tramite el imput contexto de ia debe ser para texto , no un solo campo 
-- [ ] En el paso dos de crear un tramite los imputs deben ser para texto , no para un solo campo
+- [X] En crear un tramite el imput contexto de ia debe ser para texto , no un solo campo 
+- [X] En el paso dos de crear un tramite los imputs deben ser para texto , no para un solo campo
 - [ ] La opcion Borrar tramite no debe eliminar el tramite si no actualizar el estado a -1 para que no lo muestre en la lista de direcciones 
 - [X] los campos formularios no guardan datos
 
