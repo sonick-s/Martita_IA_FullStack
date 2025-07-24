@@ -19,10 +19,11 @@ export const useFormulariosStore = defineStore('formularios', {
      * @param {object} data - Los datos a actualizar.
      * @returns {Promise<object>} El formulario actualizado.
      */
-    async updateFormulario(id, data) {
-      const response = await apiClient.put(`/formularios-tramite/${id}`, data);
-      return response.data;
-    },
+  async updateFormulario(formData) {
+  const { id_formulario, ...data } = formData;
+  const response = await apiClient.put(`/formularios-tramite/${id_formulario}`, data);
+  return response.data;
+},
 
     /**
      * Elimina un formulario por su ID.

@@ -30,39 +30,46 @@
         </div>
         <div class="form-group">
           <label for="context">Contexto para la IA</label>
-          <textarea id="context" rows="3" v-model="procedureData.contexto" placeholder="Añadir contexto en lenguaje natural..."></textarea>
+          <textarea id="context" rows="3" v-model="procedureData.contexto"
+            placeholder="Añadir contexto en lenguaje natural..."></textarea>
         </div>
       </section>
 
       <section class="form-section">
         <h2>Requisitos</h2>
-        <p class="section-subtitle">Añade todos los requisitos que el usuario debe cumplir.</p>
-        <div v-for="(req, index) in procedureData.requisitos" :key="req.id_requisito || `new-${index}`" class="dynamic-item">
-          <input type="text" v-model="req.requisito" class="main-input" placeholder="Descripción del requisito">
-          <input type="text" v-model="req.contexto" placeholder="Contexto (opcional)">
-          <button class="remove-button" @click="removeRequisito(index)">-</button>
+        <div v-for="(req, index) in procedureData.requisitos" :key="req.id_requisito || `new-${index}`"
+          class="dynamic-item">
+          <input type="text" v-model="req.requisito" @change="handleItemChange(req, 'requisito')" class="main-input"
+            placeholder="Descripción del requisito">
+          <input type="text" v-model="req.contexto" @change="handleItemChange(req, 'requisito')"
+            placeholder="Contexto (opcional)">
+          <button class="remove-button" @click="removeItem(index, 'requisito')">-</button>
         </div>
-        <button class="add-button" @click="addRequisito">+ Agregar Requisito</button>
+        <button class="add-button" @click="addItem('requisito')">+ Agregar Requisito</button>
       </section>
 
       <section class="form-section">
         <h2>Pasos</h2>
-        <p class="section-subtitle">Detalla los pasos que el usuario debe seguir.</p>
-        <div v-for="(paso, index) in procedureData.pasos" :key="paso.id_paso || `new-paso-${index}`" class="dynamic-item">
-          <input type="text" v-model="paso.paso" class="main-input" placeholder="Descripción del paso">
-          <input type="text" v-model="paso.contexto" placeholder="Contexto (opcional)">
-          <button class="remove-button" @click="removePaso(index)">-</button>
+        <div v-for="(paso, index) in procedureData.pasos" :key="paso.id_paso || `new-paso-${index}`"
+          class="dynamic-item">
+          <input type="text" v-model="paso.paso" @change="handleItemChange(paso, 'paso')" class="main-input"
+            placeholder="Descripción del paso">
+          <input type="text" v-model="paso.contexto" @change="handleItemChange(paso, 'paso')"
+            placeholder="Contexto (opcional)">
+          <button class="remove-button" @click="removeItem(index, 'paso')">-</button>
         </div>
-        <button class="add-button" @click="addPaso">+ Agregar Paso</button>
+        <button class="add-button" @click="addItem('paso')">+ Agregar Paso</button>
       </section>
 
       <section class="form-section">
         <h2>Formularios</h2>
-        <p class="section-subtitle">Añade los enlaces a los formularios necesarios.</p>
-        <div v-for="(form, index) in procedureData.formularios" :key="form.id_formulario || `new-form-${index}`" class="dynamic-item">
-          <input type="url" v-model="form.url" class="main-input" placeholder="URL del formulario">
-          <input type="text" v-model="form.contexto" placeholder="Contexto (opcional)">
-          <button class="remove-button" @click="removeFormulario(index)">-</button>
+        <div v-for="(form, index) in procedureData.formularios" :key="form.id_formulario || `new-form-${index}`"
+          class="dynamic-item">
+          <input type="url" v-model="form.url" @change="handleItemChange(form, 'formulario')" class="main-input"
+            placeholder="URL del formulario">
+          <input type="text" v-model="form.contexto" @change="handleItemChange(form, 'formulario')"
+            placeholder="Contexto (opcional)">
+          <button class="remove-button" @click="removeItem(index, 'formulario')">-</button>
         </div>
         <button class="add-button" @click="addFormulario">+ Agregar Formulario</button>
       </section>
@@ -74,114 +81,118 @@
 import { onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useProceduresStore } from '@/stores/procedures';
-// Las otras stores siguen siendo necesarias para el autoguardado, pero no para la carga
 import { useRequisitosStore } from '@/stores/requisitos';
 import { usePasosStore } from '@/stores/pasos';
 import { useFormulariosStore } from '@/stores/formularios';
 
 const route = useRoute();
 const proceduresStore = useProceduresStore();
-const requisitosStore = useRequisitosStore();
-const pasosStore = usePasosStore();
-const formulariosStore = useFormulariosStore();
+
+const stores = {
+  requisito: useRequisitosStore(),
+  paso: usePasosStore(),
+  formulario: useFormulariosStore(),
+};
 
 const procedureData = ref(null);
 const isLoading = ref(true);
 const saveStatus = ref('Todos los cambios guardados');
 let debounceTimer = null;
 
-// --- Carga de datos SÚPER SIMPLIFICADA ---
 onMounted(async () => {
   isLoading.value = true;
   const procedureId = route.params.id;
   if (procedureId) {
-    // 👇 ¡HACEMOS LA ÚNICA LLAMADA QUE YA OBTIENE TODO!
     await proceduresStore.fetchProcedureById(procedureId);
-
-    // Si la llamada fue exitosa, activeProcedure contendrá todo
     if (proceduresStore.activeProcedure) {
-      // Usamos los datos completos (incluyendo listas) para poblar el estado local
       procedureData.value = JSON.parse(JSON.stringify(proceduresStore.activeProcedure));
     }
-    // 👇 YA NO NECESITAMOS LAS OTRAS LLAMADAS (Promise.all)
   }
   isLoading.value = false;
 });
 
-
-// --- Lógica de Autoguardado Inteligente (SIN CAMBIOS) ---
-watch(procedureData, (newData, oldData) => {
+watch(() => procedureData.value && { ...procedureData.value }, (newData, oldData) => {
   if (!newData || !oldData || isLoading.value) return;
+
+  if (newData.nombre === oldData.nombre && newData.descripcion === oldData.descripcion && newData.contexto === oldData.contexto) {
+    return;
+  }
 
   saveStatus.value = 'Guardando...';
   clearTimeout(debounceTimer);
-
   debounceTimer = setTimeout(async () => {
     try {
-      await syncAllChanges(newData, oldData);
-      saveStatus.value = '✅ Todos los cambios guardados';
+      const { requisitos, pasos, formularios, ...mainData } = newData;
+      await proceduresStore.updateProcedure(mainData);
+      saveStatus.value = '✅ Guardado';
     } catch (error) {
       saveStatus.value = '❌ Error al guardar';
-      console.error("Error en autoguardado:", error);
     }
   }, 1500);
 }, { deep: true });
 
-async function syncAllChanges(newData, oldData) {
-  const { requisitos, pasos, formularios, ...mainData } = newData;
-  const oldRequisitos = oldData.requisitos || [];
-  const oldPasos = oldData.pasos || [];
-  const oldFormularios = oldData.formularios || [];
+const getStoreAndIdKey = (type) => {
+  const store = stores[type];
+  const idKey = `id_${type}`;
+  return { store, idKey };
+};
 
-  await proceduresStore.updateProcedure(mainData);
-  await syncList(requisitos, oldRequisitos, 'id_requisito', requisitosStore);
-  await syncList(pasos, oldPasos, 'id_paso', pasosStore);
-  await syncList(formularios, oldFormularios, 'id_formulario', formulariosStore);
-}
+const handleItemChange = async (item, type) => {
+  saveStatus.value = 'Guardando...';
+  const { store, idKey } = getStoreAndIdKey(type);
+  const actionPrefix = type.charAt(0).toUpperCase() + type.slice(1);
 
-async function syncList(newList, oldList, idKey, store) {
-  const procedureId = route.params.id;
-
-  // Detectar y CREAR/ACTUALIZAR ítems
-  for (const item of newList) {
-    const oldItem = oldList.find(old => old[idKey] === item[idKey]);
-    if (!oldItem) { // Si no estaba antes (ID negativo), es nuevo
+  try {
+    if (item[idKey] > 0) {
+      await store[`update${actionPrefix}`](item);
+    } else {
       const { [idKey]: tempId, ...newItemData } = item;
-      await store[`create${store.$id.charAt(0).toUpperCase() + store.$id.slice(1, -1)}`]({ ...newItemData, id_tramite: procedureId });
-    } else if (JSON.stringify(oldItem) !== JSON.stringify(item)) { // Si estaba y cambió
-      await store[`update${store.$id.charAt(0).toUpperCase() + store.$id.slice(1, -1)}`](item);
+      const createdItem = await store[`create${actionPrefix}`]({
+        ...newItemData,
+        id_tramite: route.params.id
+      });
+      Object.assign(item, createdItem);
+    }
+    saveStatus.value = '✅ Guardado';
+  } catch (error) {
+    saveStatus.value = '❌ Error al guardar';
+    console.error(`Error al guardar ${type}:`, error);
+  }
+};
+
+const addItem = (type) => {
+  const listKey = `${type}s`;
+  if (!procedureData.value[listKey]) {
+    procedureData.value[listKey] = [];
+  }
+  const newItem = { [`id_${type}`]: -Date.now(), contexto: '' };
+  if (type === 'formulario') {
+    newItem.url = '';
+  } else {
+    newItem[type] = '';
+  }
+  procedureData.value[listKey].push(newItem);
+};
+
+// 👇 FUNCIÓN CORREGIDA
+const removeItem = async (index, type) => {
+  const listKey = `${type}s`;
+  const item = procedureData.value[listKey][index];
+  const { store, idKey } = getStoreAndIdKey(type);
+
+  procedureData.value[listKey].splice(index, 1);
+
+  if (item && item[idKey] > 0) {
+    saveStatus.value = 'Eliminando...';
+    try {
+      const actionPrefix = type.charAt(0).toUpperCase() + type.slice(1);
+      await store[`delete${actionPrefix}`](item[idKey]);
+      saveStatus.value = '✅ Eliminado';
+    } catch (error) {
+      saveStatus.value = '❌ Error al eliminar';
+      console.error(`Error al eliminar ${type}:`, error);
     }
   }
-
-  // Detectar y BORRAR ítems
-  for (const item of oldList) {
-    if (!newList.some(newItem => newItem[idKey] === item[idKey])) {
-      await store[`delete${store.$id.charAt(0).toUpperCase() + store.$id.slice(1, -1)}`](item[idKey]);
-    }
-  }
-}
-
-// --- Lógica para las listas dinámicas (SIN CAMBIOS) ---
-const addRequisito = () => {
-  if (!procedureData.value.requisitos) procedureData.value.requisitos = [];
-  procedureData.value.requisitos.push({ id_requisito: -Date.now(), requisito: '', contexto: '' });
-};
-const removeRequisito = (index) => {
-  procedureData.value.requisitos.splice(index, 1);
-};
-const addPaso = () => {
-  if (!procedureData.value.pasos) procedureData.value.pasos = [];
-  procedureData.value.pasos.push({ id_paso: -Date.now(), paso: '', contexto: '' });
-};
-const removePaso = (index) => {
-  procedureData.value.pasos.splice(index, 1);
-};
-const addFormulario = () => {
-  if (!procedureData.value.formularios) procedureData.value.formularios = [];
-  procedureData.value.formularios.push({ id_formulario: -Date.now(), url: '', contexto: '' });
-};
-const removeFormulario = (index) => {
-  procedureData.value.formularios.splice(index, 1);
 };
 </script>
 

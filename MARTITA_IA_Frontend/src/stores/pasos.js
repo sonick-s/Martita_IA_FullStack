@@ -19,10 +19,11 @@ export const usePasosStore = defineStore('pasos', {
      * @param {object} data - Los datos a actualizar.
      * @returns {Promise<object>} El paso actualizado.
      */
-    async updatePaso(id, data) {
-      const response = await apiClient.put(`/pasos-tramite/${id}`, data);
-      return response.data;
-    },
+    async updatePaso(pasoData) {
+  const { id_paso, ...data } = pasoData;
+  const response = await apiClient.put(`/pasos-tramite/${id_paso}`, data);
+  return response.data;
+},
 
     /**
      * Elimina un paso por su ID.

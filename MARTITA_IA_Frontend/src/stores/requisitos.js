@@ -19,10 +19,12 @@ export const useRequisitosStore = defineStore('requisitos', {
      * @param {object} data - Los datos a actualizar.
      * @returns {Promise<object>} El requisito actualizado.
      */
-    async updateRequisito(id, data) {
-      const response = await apiClient.put(`/requisitos-tramite/${id}`, data);
-      return response.data;
-    },
+    async updateRequisito(requisitoData) {
+  // Extrae el ID del objeto y envía el resto como datos
+  const { id_requisito, ...data } = requisitoData;
+  const response = await apiClient.put(`/requisitos-tramite/${id_requisito}`, data);
+  return response.data;
+},
 
     /**
      * Elimina un requisito por su ID.
