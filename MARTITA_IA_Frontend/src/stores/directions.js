@@ -7,66 +7,56 @@ export const useDirectionsStore = defineStore('directions', {
     isLoading: false,
     error: null,
   }),
+
   getters: {
-    directionMap(state) {
-      const map = {};
-      for (const dir of state.directions) {
-        map[dir.id_direcciones] = dir.nombre;
-      }
-      return map;
+    // Getter para obtener solo las direcciones activas
+    activeDirections: (state) => {
+      return state.directions.filter(dir => dir.estado === 1);
     },
+    // Getter para mapear IDs a nombres, útil para la tabla de trámites
+    directionMap: (state) => {
+      return state.directions.reduce((map, dir) => {
+        map[dir.id_direcciones] = dir.nombre;
+        return map;
+      }, {});
+    }
   },
+
   actions: {
     async fetchDirections() {
       this.isLoading = true;
-      this.error = null;
       try {
         const response = await apiClient.get('/direcciones/');
         this.directions = response.data;
       } catch (err) {
         this.error = 'No se pudieron cargar las direcciones.';
-        console.error('Error fetching directions:', err);
       } finally {
         this.isLoading = false;
       }
     },
-    async createDirection(newDirection) {
-      try {
-        await apiClient.post('/direcciones/', newDirection);
-        await this.fetchDirections();
-      } catch (err) {
-        console.error('Error creating direction:', err);
-        throw err;
-      }
-    },
-    async updateDirection(directionToUpdate) {
-      this.isLoading = true;
-      const { id_direcciones, ...data } = directionToUpdate;
 
-      try {
-        await apiClient.put(`/direcciones/${id_direcciones}`, data);
-        await this.fetchDirections(); // Recargamos para ver los cambios
-      } catch (err) {
-        this.error = 'No se pudo actualizar la dirección.';
-        console.error('Error updating direction:', err);
-        throw err;
-      } finally {
-        this.isLoading = false;
-      }
+    async createDirection(data) {
+      // Aseguramos que el estado por defecto sea 1
+      await apiClient.post('/direcciones/', data);
+      await this.fetchDirections();
     },
-    async deleteDirection(directionId) {
-      this.isLoading = true;
-      try {
-        await apiClient.delete(`/direcciones/${directionId}`);
-        // Después de eliminar, recargamos la lista para actualizar las tarjetas.
-        await this.fetchDirections();
-      } catch (err) {
-        this.error = 'No se pudo eliminar la dirección.';
-        console.error('Error deleting direction:', err);
-        throw err; // Lanzamos el error para que la vista lo sepa.
-      } finally {
-        this.isLoading = false;
-      }
+
+    async updateDirection(data) {
+      const { id_direcciones, ...updateData } = data;
+      await apiClient.put(`/direcciones/${id_direcciones}`, updateData);
+      await this.fetchDirections();
+    },
+
+    // CAMBIO: 'delete' ahora es 'deactivate'
+    async deactivateDirection(id) {
+      await apiClient.put(`/direcciones/${id}`, { estado: 0 });
+      await this.fetchDirections();
+    },
+
+    // NUEVA ACCIÓN: Para reactivar
+    async activateDirection(id) {
+      await apiClient.put(`/direcciones/${id}`, { estado: 1 });
+      await this.fetchDirections();
     },
   },
 });

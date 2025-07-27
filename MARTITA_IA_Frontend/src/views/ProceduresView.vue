@@ -12,109 +12,138 @@
       <h2 class="section-title">Direcciones</h2>
       <div v-if="directionsStore.isLoading" class="loading-message">Cargando...</div>
       <div v-else-if="directionsStore.directions.length > 0" class="directions-grid">
-        <div v-for="dir in directionsStore.directions" :key="dir.id_direcciones" class="direction-card">
+        <div v-for="dir in allDirections" :key="dir.id_direcciones" class="direction-card"
+          :class="{ 'is-inactive': dir.estado === 0, 'is-clickable': dir.estado === 1 }"
+          @click="dir.estado === 1 ? openProceduresModal(dir) : null">
           <div class="card-header">
             <h3>{{ dir.nombre }}</h3>
           </div>
-          <div class="card-body">
-            <p class="description">{{ dir.descripcion || 'Sin descripción.' }}</p>
-            <div class="card-details">
-              <p class="detail-item"><strong>👤 Responsable:</strong> {{ dir.responsable || 'N/A' }}</p>
-              <p class="detail-item"><strong>✉️ Email:</strong> {{ dir.correo_responsable || 'N/A' }}</p>
-              <p class="detail-item"><strong>📞 Teléfono:</strong> {{ dir.telefono || 'N/A' }}</p>
+          <template v-if="dir.estado === 1">
+            <div class="card-body">
+              <p class="description">{{ dir.descripcion || 'Sin descripción.' }}</p>
+              <div class="card-details">
+                <p class="detail-item"><strong>👤 Responsable:</strong> {{ dir.responsable || 'N/A' }}</p>
+                <p class="detail-item"><strong>✉️ Email:</strong> {{ dir.correo_responsable || 'N/A' }}</p>
+                <p class="detail-item"><strong>📞 Teléfono:</strong> {{ dir.telefono || 'N/A' }}</p>
+              </div>
             </div>
-          </div>
-          <div class="card-footer">
-            <button class="card-action-btn edit" @click="openEditDirectionModal(dir)">📝 Editar</button>
-            <button class="card-action-btn delete" @click="openDeleteConfirm(dir.id_direcciones, 'direction')">🗑️
-              Eliminar</button>
-          </div>
+            <div class="card-footer">
+              <button class="card-action-btn edit" @click.stop="openEditDirectionModal(dir)">📝 Editar</button>
+              <button class="card-action-btn delete"
+                @click.stop="openDeleteConfirm(dir.id_direcciones, 'direction')">🗑️ Desactivar</button>
+            </div>
+          </template>
+          <template v-else>
+            <div class="inactive-overlay">
+              <button class="card-action-btn activate-center"
+                @click.stop="directionsStore.activateDirection(dir.id_direcciones)">
+                🔄 Reactivar Dirección
+              </button>
+            </div>
+          </template>
         </div>
       </div>
       <div v-else class="empty-message">No hay direcciones. Crea una para empezar.</div>
     </section>
 
-<section class="section-container">
-  <h2 class="section-title">Trámites</h2>
-  <div class="table-container">
-    <div v-if="proceduresStore.isLoading" class="loading-message">Cargando...</div>
-    <table v-else-if="proceduresStore.procedures.length > 0">
-      <thead>
-        <tr>
-          <th>Trámite</th>
-          <th>Descripción</th>
-          <th>Estado</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="proc in proceduresStore.procedures" :key="proc.id_tramite" :class="{ 'is-inactive': proc.estado === -1 }">
-          <td><strong>{{ proc.nombre }}</strong></td>
-          <td class="description-cell">{{ proc.descripcion }}</td>
-          <td>
-            <span :class="['status-badge', proc.estado === 1 ? 'status-active' : 'status-inactive']">
-              <template v-if="proc.estado === 1">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                Activo
-              </template>
-              <template v-else>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                Inactivo
-              </template>
-            </span>
-          </td>
-          <td class="actions-cell">
-            <template v-if="proc.estado === 1">
-              <router-link :to="{ name: 'procedure-editor', params: { id: proc.id_tramite } }" class="table-action-btn edit">📝 Editar</router-link>
-              <button class="table-action-btn delete" @click="openDeleteConfirm(proc.id_tramite, 'procedure')">🗑️ Desactivar</button>
-            </template>
-            <template v-else>
-              <button class="table-action-btn activate" @click="proceduresStore.activateProcedure(proc.id_tramite)">🔄 Reactivar</button>
-            </template>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <div v-else class="empty-message">No hay trámites para mostrar.</div>
-  </div>
-</section>
+    <section class="section-container">
+      <div class="section-header">
+        <h2 class="section-title">Trámites</h2>
+        <button v-if="filteredDirectionId" @click="filteredDirectionId = null" class="clear-filter-btn">Mostrar
+          Todos</button>
+      </div>
+      <div class="table-container">
+        <div v-if="proceduresStore.isLoading" class="loading-message">Cargando...</div>
+        <table v-else-if="displayedProcedures.length > 0">
+          <thead>
+            <tr>
+              <th>Dirección</th>
+              <th>Trámite</th>
+              <th>Descripción</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="proc in displayedProcedures" :key="proc.id_tramite"
+              :class="{ 'is-inactive': proc.estado === 0 }">
+              <td>{{ directionsStore.directionMap[proc.id_direcciones] || 'N/A' }}</td>
+              <td><strong>{{ proc.nombre }}</strong></td>
+              <td class="description-cell">{{ proc.descripcion }}</td>
+              <td>
+                <span :class="['status-badge', proc.estado === 1 ? 'status-active' : 'status-inactive']">
+                  {{ proc.estado === 1 ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="actions-cell">
+                <template v-if="proc.estado === 1">
+                  <router-link :to="{ name: 'procedure-editor', params: { id: proc.id_tramite } }"
+                    class="table-action-btn edit">📝 Editar</router-link>
+                  <button class="table-action-btn delete" @click="openDeleteConfirm(proc.id_tramite, 'procedure')">🗑️
+                    Desactivar</button>
+                </template>
+                <template v-else>
+                  <button class="table-action-btn activate"
+                    @click="proceduresStore.activateProcedure(proc.id_tramite)">🔄 Reactivar</button>
+                </template>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-else class="empty-message">No hay trámites para mostrar.</div>
+      </div>
+    </section>
 
-    <ProcedureWizardModal v-if="isWizardModalOpen" :directions="directionsStore.directions"
+    <ProcedureWizardModal v-if="isWizardModalOpen" :directions="directionsStore.activeDirections"
       @close="closeCreateProcedureModal" />
     <DirectionFormModal v-if="isDirectionModalOpen" :direction-to-edit="directionBeingEdited"
       @close="closeDirectionModal" @submit="handleDirectionFormSubmit" />
     <ConfirmationModal v-if="isConfirmModalOpen" title="Confirmar Acción" message="¿Estás seguro?"
       @cancel="closeConfirmModal" @confirm="confirmDelete" />
+    <ProceduresListModal v-if="isProceduresModalOpen" :direction="selectedDirection" :procedures="displayedProcedures"
+      @close="isProceduresModalOpen = false" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useProceduresStore } from '@/stores/procedures';
 import { useDirectionsStore } from '@/stores/directions';
 import DirectionFormModal from '@/components/DirectionFormModal.vue';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
 import ProcedureWizardModal from '@/components/ProcedureWizardModal.vue';
+import ProceduresListModal from '@/components/ProceduresListModal.vue'; // Importa el nuevo modal
 
 const proceduresStore = useProceduresStore();
 const directionsStore = useDirectionsStore();
 
-// --- Estados para los modales ---
+const allDirections = computed(() => directionsStore.directions);
+
+// Estados para Modales
 const isWizardModalOpen = ref(false);
 const isDirectionModalOpen = ref(false);
 const directionBeingEdited = ref(null);
 const isConfirmModalOpen = ref(false);
 const itemToDelete = ref({ id: null, type: null });
+const isProceduresModalOpen = ref(false);
+const selectedDirection = ref(null);
 
-// --- Funciones para el Asistente de Trámites ---
-const openCreateProcedureModal = () => {
-  isWizardModalOpen.value = true;
-};
-const closeCreateProcedureModal = () => {
-  isWizardModalOpen.value = false;
-};
+// Lógica de Filtro
+const filteredDirectionId = ref(null);
 
-// --- Funciones para Direcciones ---
+const displayedProcedures = computed(() => {
+  const allProcedures = proceduresStore.procedures;
+  if (!filteredDirectionId.value) {
+    return allProcedures;
+  }
+  return allProcedures.filter(
+    proc => proc.id_direcciones === filteredDirectionId.value
+  );
+});
+
+// Funciones para abrir/cerrar Modales
+const openCreateProcedureModal = () => { isWizardModalOpen.value = true; };
+const closeCreateProcedureModal = () => { isWizardModalOpen.value = false; };
 const openCreateDirectionModal = () => {
   directionBeingEdited.value = null;
   isDirectionModalOpen.value = true;
@@ -127,6 +156,11 @@ const closeDirectionModal = () => {
   isDirectionModalOpen.value = false;
   directionBeingEdited.value = null;
 };
+const openProceduresModal = (direction) => {
+  selectedDirection.value = direction;
+  isProceduresModalOpen.value = true;
+};
+
 const handleDirectionFormSubmit = async (data) => {
   try {
     if (directionBeingEdited.value) {
@@ -135,13 +169,9 @@ const handleDirectionFormSubmit = async (data) => {
       await directionsStore.createDirection(data);
     }
     closeDirectionModal();
-  } catch (error) {
-    console.error('Error al guardar la dirección:', error);
-    alert('Ocurrió un error al guardar la dirección.');
-  }
+  } catch (error) { console.error('Error al guardar la dirección:', error); }
 };
 
-// --- Funciones para Eliminar ---
 const openDeleteConfirm = (id, type) => {
   itemToDelete.value = { id, type };
   isConfirmModalOpen.value = true;
@@ -154,20 +184,16 @@ const confirmDelete = async () => {
   if (!itemToDelete.value.id) return;
   try {
     if (itemToDelete.value.type === 'procedure') {
-      // 👇 ¡ESTE ES EL ÚNICO CAMBIO NECESARIO!
       await proceduresStore.deactivateProcedure(itemToDelete.value.id);
     } else if (itemToDelete.value.type === 'direction') {
-      await directionsStore.deleteDirection(itemToDelete.value.id);
+      await directionsStore.deactivateDirection(itemToDelete.value.id);
     }
-  } catch (error) {
-    console.error('Error al procesar la acción:', error);
-    alert('Error al procesar la acción.');
-  } finally {
+  } catch (error) { console.error('Error al desactivar:', error); }
+  finally {
     closeConfirmModal();
   }
 };
 
-// --- Ciclo de vida ---
 onMounted(() => {
   proceduresStore.fetchProcedures();
   directionsStore.fetchDirections();
@@ -175,8 +201,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* ESTILOS COMPLETOS Y ACTUALIZADOS PARA PROCEDURESVIEW.VUE */
-
 .procedures-view {
   width: 100%;
 }
@@ -203,8 +227,8 @@ onMounted(() => {
 }
 
 .action-btn {
-  background-color: #e9ecef;
-  color: #495057;
+  background-color: #42b983;
+  color: white;
   border: none;
   padding: 0.8rem 1.2rem;
   border-radius: 8px;
@@ -214,21 +238,37 @@ onMounted(() => {
 }
 
 .action-btn:hover {
-  background-color: #ced4da;
+  background-color: #3aa873;
 }
 
 .section-container {
   margin-bottom: 3rem;
 }
 
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
 .section-title {
   font-size: 1.5rem;
   font-weight: 600;
   color: #2c3e50;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
 }
 
-/* --- Estilos para las Tarjetas de Direcciones --- */
+.clear-filter-btn {
+  background-color: #e9ecef;
+  color: #495057;
+  border: 1px solid #ced4da;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .directions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -241,18 +281,26 @@ onMounted(() => {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all 0.2s ease-in-out;
   border: 1px solid #e9ecef;
+  position: relative;
+  min-height: 250px;
+  /* FIJA LA ALTURA MÍNIMA */
 }
 
-.direction-card:hover {
+.direction-card.is-clickable:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  border-color: #42b983;
 }
 
 .card-header {
-  padding: 1.5rem;
+  padding: 1rem 1.5rem;
   border-bottom: 1px solid #e9ecef;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .card-header h3 {
@@ -270,18 +318,10 @@ onMounted(() => {
 .card-body .description {
   font-style: italic;
   margin-bottom: 1rem;
-  font-size: 0.9rem;
 }
 
-.card-details {
-  font-size: 0.9rem;
-}
-
-.detail-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+.card-details p {
+  margin: 0.5rem 0;
 }
 
 .card-footer {
@@ -296,29 +336,55 @@ onMounted(() => {
 }
 
 .card-action-btn {
-  background: white;
+  background: none;
   border: 1px solid #ced4da;
   padding: 0.4rem 0.8rem;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: 500;
+}
+
+.direction-card.is-inactive {
+  background: linear-gradient(135deg, rgba(20, 20, 30, 0.85), rgba(13, 110, 253, 0.75));
+  color: #fff;
+}
+
+.direction-card.is-inactive .card-header {
+  border-bottom-color: rgba(255, 255, 255, 0.2);
+}
+
+.direction-card.is-inactive .card-header h3 {
+  opacity: 0.5;
+  color: #fff;
+}
+
+.inactive-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 0.4rem;
 }
 
-.card-action-btn.delete {
-  background-color: #dc3545;
-  color: white;
-  border-color: #dc3545;
+.activate-center {
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  background-color: rgba(255, 255, 255, 0.95);
+  color: #2c3e50;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
-/* --- Estilos para la Tabla de Trámites --- */
 .table-container {
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  overflow-x: auto;
+  overflow: hidden;
 }
 
 table {
@@ -331,10 +397,11 @@ td {
   padding: 1rem 1.5rem;
   text-align: left;
   border-bottom: 1px solid #e9ecef;
+  vertical-align: middle;
 }
 
-td {
-  color: #2c3e50;
+thead tr {
+  background-color: #f8f9fa;
 }
 
 th {
@@ -342,47 +409,72 @@ th {
   color: #6c757d;
   font-size: 0.8rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+}
+
+tbody tr:nth-child(even) {
+  background-color: #fdfdfd;
+}
+
+tbody tr:hover {
+  background-color: #f1f3f5;
+}
+
+td {
+  color: #2c3e50;
 }
 
 .description-cell {
   max-width: 400px;
-  white-space: normal;
 }
 
 .actions-cell {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  align-items: center;
 }
 
 .table-action-btn {
   background: none;
-  border: none;
-  padding: 0.4rem;
+  border: 1px solid transparent;
+  padding: 0.4rem 0.8rem;
   border-radius: 6px;
   cursor: pointer;
-  display: flex;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 1rem;
-  text-decoration: none;
+  transition: all 0.2s ease;
 }
 
 .table-action-btn.edit {
   color: #28a745;
+  background-color: #e7f5ec;
+}
+
+.table-action-btn.edit:hover {
+  background-color: #d1f0db;
 }
 
 .table-action-btn.delete {
   color: #dc3545;
+  background-color: #fbeae5;
 }
 
-.table-action-btn:hover {
-  background-color: #f1f3f5;
+.table-action-btn.delete:hover {
+  background-color: #f7d6d2;
 }
 
-/* 👇 --- ESTILOS AÑADIDOS PARA ESTADOS Y ACCIONES --- */
+.table-action-btn.activate {
+  color: #0d6efd;
+  background-color: #e7f1ff;
+}
 
-/* Estilo para la fila inactiva completa */
+.table-action-btn.activate:hover {
+  background-color: #d0e2ff;
+}
+
 tr.is-inactive {
   background-color: #f8f9fa;
   color: #adb5bd;
@@ -392,54 +484,23 @@ tr.is-inactive strong {
   color: #adb5bd;
 }
 
-/* Contenedor del badge de estado */
 .status-badge {
   display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
   padding: 0.25rem 0.75rem;
   font-size: 0.8rem;
   font-weight: 600;
   border-radius: 12px;
-  text-transform: capitalize;
 }
 
-.status-badge svg {
-  margin-bottom: -2px;
-}
-
-/* Badge para estado activo */
 .status-active {
   background-color: #e7f5ec;
   color: #28a745;
 }
 
-.status-active svg {
-  stroke: #28a745;
-}
-
-/* Badge para estado inactivo */
 .status-inactive {
-  background-color: #fff0f1;
+  background-color: #fbeae5;
   color: #dc3545;
 }
-
-.status-inactive svg {
-  stroke: #dc3545;
-}
-
-/* Estilo para el nuevo botón de reactivar */
-.table-action-btn.activate {
-  color: #0d6efd;
-}
-
-/* Asegura que los botones en filas inactivas no se vean tan opacos */
-tr.is-inactive .actions-cell button,
-tr.is-inactive .actions-cell a {
-  opacity: 1;
-}
-
-/* --- Fin de Estilos Añadidos --- */
 
 .loading-message,
 .empty-message {
@@ -447,5 +508,4 @@ tr.is-inactive .actions-cell a {
   padding: 2rem;
   color: #6c757d;
 }
-
 </style>
