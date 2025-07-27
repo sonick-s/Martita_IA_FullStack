@@ -11,7 +11,7 @@
     <section class="section-container">
       <h2 class="section-title">Direcciones</h2>
       <div v-if="directionsStore.isLoading" class="loading-message">Cargando...</div>
-      <div v-else-if="directionsStore.directions.length > 0" class="directions-grid">
+      <div v-else-if="allDirections.length > 0" class="directions-grid">
         <div v-for="dir in allDirections" :key="dir.id_direcciones" class="direction-card"
           :class="{ 'is-inactive': dir.estado === 0, 'is-clickable': dir.estado === 1 }"
           @click="dir.estado === 1 ? openProceduresModal(dir) : null">
@@ -30,7 +30,7 @@
             <div class="card-footer">
               <button class="card-action-btn edit" @click.stop="openEditDirectionModal(dir)">📝 Editar</button>
               <button class="card-action-btn delete"
-                @click.stop="openDeleteConfirm(dir.id_direcciones, 'direction')">🗑️ Desactivar</button>
+                @click.stop="openDeleteConfirm(dir.id_direcciones, 'direction', dir.nombre)">🗑️ Desactivar</button>
             </div>
           </template>
           <template v-else>
@@ -54,7 +54,7 @@
       </div>
       <div class="table-container">
         <div v-if="proceduresStore.isLoading" class="loading-message">Cargando...</div>
-        <table v-else-if="displayedProcedures.length > 0">
+        <table v-else-if="displayedProcedures.length > 0" ref="proceduresTable">
           <thead>
             <tr>
               <th>Dirección</th>
@@ -79,8 +79,8 @@
                 <template v-if="proc.estado === 1">
                   <router-link :to="{ name: 'procedure-editor', params: { id: proc.id_tramite } }"
                     class="table-action-btn edit">📝 Editar</router-link>
-                  <button class="table-action-btn delete" @click="openDeleteConfirm(proc.id_tramite, 'procedure')">🗑️
-                    Desactivar</button>
+                  <button class="table-action-btn delete"
+                    @click="openDeleteConfirm(proc.id_tramite, 'procedure', proc.nombre)">🗑️ Desactivar</button>
                 </template>
                 <template v-else>
                   <button class="table-action-btn activate"
@@ -98,7 +98,7 @@
       @close="closeCreateProcedureModal" />
     <DirectionFormModal v-if="isDirectionModalOpen" :direction-to-edit="directionBeingEdited"
       @close="closeDirectionModal" @submit="handleDirectionFormSubmit" />
-    <ConfirmationModal v-if="isConfirmModalOpen" title="Confirmar Acción" message="¿Estás seguro?"
+    <ConfirmationModal v-if="isConfirmModalOpen" :title="confirmModalTitle" :message="confirmModalMessage"
       @cancel="closeConfirmModal" @confirm="confirmDelete" />
     <ProceduresListModal v-if="isProceduresModalOpen" :direction="selectedDirection" :procedures="displayedProcedures"
       @close="isProceduresModalOpen = false" />
@@ -106,61 +106,76 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, nextTick } from 'vue';
 import { useProceduresStore } from '@/stores/procedures';
 import { useDirectionsStore } from '@/stores/directions';
 import DirectionFormModal from '@/components/DirectionFormModal.vue';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
 import ProcedureWizardModal from '@/components/ProcedureWizardModal.vue';
-import ProceduresListModal from '@/components/ProceduresListModal.vue'; // Importa el nuevo modal
+import ProceduresListModal from '@/components/ProceduresListModal.vue';
 
 const proceduresStore = useProceduresStore();
 const directionsStore = useDirectionsStore();
 
-const allDirections = computed(() => directionsStore.directions);
+// --- Referencias y Estados ---
+const itemToDelete = ref({ id: null, type: null, name: '' });
+const proceduresTable = ref(null); // <-- Referencia para la tabla
 
-// Estados para Modales
 const isWizardModalOpen = ref(false);
 const isDirectionModalOpen = ref(false);
 const directionBeingEdited = ref(null);
 const isConfirmModalOpen = ref(false);
-const itemToDelete = ref({ id: null, type: null });
-const isProceduresModalOpen = ref(false);
 const selectedDirection = ref(null);
-
-// Lógica de Filtro
+const isProceduresModalOpen = ref(false);
 const filteredDirectionId = ref(null);
 
+const allDirections = computed(() => directionsStore.directions);
 const displayedProcedures = computed(() => {
-  const allProcedures = proceduresStore.procedures;
-  if (!filteredDirectionId.value) {
-    return allProcedures;
-  }
-  return allProcedures.filter(
-    proc => proc.id_direcciones === filteredDirectionId.value
-  );
+  if (!filteredDirectionId.value) return proceduresStore.procedures;
+  return proceduresStore.procedures.filter(p => p.id_direcciones === filteredDirectionId.value);
 });
 
-// Funciones para abrir/cerrar Modales
-const openCreateProcedureModal = () => { isWizardModalOpen.value = true; };
-const closeCreateProcedureModal = () => { isWizardModalOpen.value = false; };
-const openCreateDirectionModal = () => {
-  directionBeingEdited.value = null;
-  isDirectionModalOpen.value = true;
+const openDeleteConfirm = (id, type, name) => {
+  itemToDelete.value = { id, type, name };
+  isConfirmModalOpen.value = true;
 };
-const openEditDirectionModal = (direction) => {
-  directionBeingEdited.value = direction;
-  isDirectionModalOpen.value = true;
-};
-const closeDirectionModal = () => {
-  isDirectionModalOpen.value = false;
-  directionBeingEdited.value = null;
-};
-const openProceduresModal = (direction) => {
-  selectedDirection.value = direction;
-  isProceduresModalOpen.value = true;
+const closeConfirmModal = () => { isConfirmModalOpen.value = false; };
+
+// 👇 FUNCIÓN CORREGIDA CON LA LÓGICA DE SCROLL
+const confirmDelete = async () => {
+  if (!itemToDelete.value.id) return;
+
+  try {
+    if (itemToDelete.value.type === 'procedure') {
+      await proceduresStore.deactivateProcedure(itemToDelete.value.id);
+    } else if (itemToDelete.value.type === 'direction') {
+      await directionsStore.deactivateDirection(itemToDelete.value.id);
+    }
+
+    // Esperamos a que Vue termine de redibujar la lista
+    await nextTick();
+
+    // Hacemos scroll suave para que la tabla quede a la vista
+    // La opción 'nearest' evita el salto si la tabla ya está visible
+    proceduresTable.value?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  } catch (error) {
+    console.error('Error al desactivar:', error);
+  } finally {
+    closeConfirmModal();
+  }
 };
 
+const confirmModalTitle = computed(() => `Confirmar Desactivación`);
+const confirmModalMessage = computed(() => `¿Estás seguro de que quieres desactivar "${itemToDelete.value.name}"?`);
+
+// --- Resto de funciones (sin cambios) ---
+const openCreateProcedureModal = () => { isWizardModalOpen.value = true; };
+const closeCreateProcedureModal = () => { isWizardModalOpen.value = false; };
+const openCreateDirectionModal = () => { directionBeingEdited.value = null; isDirectionModalOpen.value = true; };
+const openEditDirectionModal = (direction) => { directionBeingEdited.value = direction; isDirectionModalOpen.value = true; };
+const closeDirectionModal = () => { isDirectionModalOpen.value = false; };
+const openProceduresModal = (direction) => { selectedDirection.value = direction; isProceduresModalOpen.value = true; };
 const handleDirectionFormSubmit = async (data) => {
   try {
     if (directionBeingEdited.value) {
@@ -170,28 +185,6 @@ const handleDirectionFormSubmit = async (data) => {
     }
     closeDirectionModal();
   } catch (error) { console.error('Error al guardar la dirección:', error); }
-};
-
-const openDeleteConfirm = (id, type) => {
-  itemToDelete.value = { id, type };
-  isConfirmModalOpen.value = true;
-};
-const closeConfirmModal = () => {
-  isConfirmModalOpen.value = false;
-  itemToDelete.value = { id: null, type: null };
-};
-const confirmDelete = async () => {
-  if (!itemToDelete.value.id) return;
-  try {
-    if (itemToDelete.value.type === 'procedure') {
-      await proceduresStore.deactivateProcedure(itemToDelete.value.id);
-    } else if (itemToDelete.value.type === 'direction') {
-      await directionsStore.deactivateDirection(itemToDelete.value.id);
-    }
-  } catch (error) { console.error('Error al desactivar:', error); }
-  finally {
-    closeConfirmModal();
-  }
 };
 
 onMounted(() => {
@@ -234,11 +227,6 @@ onMounted(() => {
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.action-btn:hover {
-  background-color: #3aa873;
 }
 
 .section-container {
@@ -285,7 +273,6 @@ onMounted(() => {
   border: 1px solid #e9ecef;
   position: relative;
   min-height: 250px;
-  /* FIJA LA ALTURA MÍNIMA */
 }
 
 .direction-card.is-clickable:hover {
@@ -445,7 +432,6 @@ td {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  transition: all 0.2s ease;
 }
 
 .table-action-btn.edit {
@@ -453,26 +439,14 @@ td {
   background-color: #e7f5ec;
 }
 
-.table-action-btn.edit:hover {
-  background-color: #d1f0db;
-}
-
 .table-action-btn.delete {
   color: #dc3545;
   background-color: #fbeae5;
 }
 
-.table-action-btn.delete:hover {
-  background-color: #f7d6d2;
-}
-
 .table-action-btn.activate {
   color: #0d6efd;
   background-color: #e7f1ff;
-}
-
-.table-action-btn.activate:hover {
-  background-color: #d0e2ff;
 }
 
 tr.is-inactive {
