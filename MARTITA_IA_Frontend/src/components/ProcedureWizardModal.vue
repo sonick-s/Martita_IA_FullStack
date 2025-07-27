@@ -106,6 +106,7 @@ const procedureData = ref({
   nombre: '',
   descripcion: '',
   contexto: '',
+  estado: 1,
 });
 
 const requisitos = ref([]);

@@ -9,6 +9,9 @@ export const useProceduresStore = defineStore('procedures', {
     error: null,
   }),
 
+  // 👇 YA NO NECESITAMOS EL GETTER, TRABAJAREMOS CON LA LISTA COMPLETA
+  // getters: { ... },
+
   actions: {
     /**
      * Obtiene la lista simple de todos los trámites.
@@ -28,16 +31,13 @@ export const useProceduresStore = defineStore('procedures', {
     },
 
     /**
-     * Obtiene un solo trámite con TODOS sus detalles usando el nuevo endpoint.
-     * @param {number} procedureId - El ID del trámite a obtener.
+     * Obtiene un solo trámite con TODOS sus detalles.
      */
     async fetchProcedureById(procedureId) {
       this.isLoading = true;
       this.activeProcedure = null;
       this.error = null;
       try {
-        // --- CAMBIO CLAVE AQUÍ ---
-        // Apuntamos al nuevo endpoint para obtener la estructura completa.
         const response = await apiClient.get(`/construir-tramite/estructurado/${procedureId}`);
         this.activeProcedure = response.data;
       } catch (err) {
@@ -65,15 +65,45 @@ export const useProceduresStore = defineStore('procedures', {
       }
     },
 
-    // Las funciones de update y delete se mantienen igual por ahora.
     async updateProcedure(procedureToUpdate) {
       const { id_tramite, ...data } = procedureToUpdate;
       await apiClient.put(`/tramites/${id_tramite}`, data);
     },
 
-    async deleteProcedure(procedureId) {
-      await apiClient.delete(`/tramites/${procedureId}`);
-      await this.fetchProcedures();
+    /**
+     * Desactiva un trámite cambiando su estado a -1 (borrado lógico).
+     */
+    async deactivateProcedure(procedureId) {
+      this.isLoading = true;
+      try {
+        await apiClient.put(`/tramites/${procedureId}`, { estado: -1 });
+        await this.fetchProcedures();
+      } catch (err) {
+        this.error = 'No se pudo desactivar el trámite.';
+        console.error('Error deactivating procedure:', err);
+        throw err;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    // 👇 NUEVA ACCIÓN PARA REACTIVAR
+    /**
+     * Activa un trámite cambiando su estado a 1.
+     * @param {number} procedureId - El ID del trámite a activar.
+     */
+    async activateProcedure(procedureId) {
+      this.isLoading = true;
+      try {
+        await apiClient.put(`/tramites/${procedureId}`, { estado: 1 });
+        await this.fetchProcedures();
+      } catch (err) {
+        this.error = 'No se pudo activar el trámite.';
+        console.error('Error activating procedure:', err);
+        throw err;
+      } finally {
+        this.isLoading = false;
+      }
     },
   },
 });

@@ -26,60 +26,65 @@
           </div>
           <div class="card-footer">
             <button class="card-action-btn edit" @click="openEditDirectionModal(dir)">📝 Editar</button>
-            <button class="card-action-btn delete" @click="openDeleteConfirm(dir.id_direcciones, 'direction')">🗑️ Eliminar</button>
+            <button class="card-action-btn delete" @click="openDeleteConfirm(dir.id_direcciones, 'direction')">🗑️
+              Eliminar</button>
           </div>
         </div>
       </div>
       <div v-else class="empty-message">No hay direcciones. Crea una para empezar.</div>
     </section>
 
-    <section class="section-container">
-      <h2 class="section-title">Trámites</h2>
-      <div class="table-container">
-        <div v-if="proceduresStore.isLoading" class="loading-message">Cargando...</div>
-        <table v-else-if="proceduresStore.procedures.length > 0">
-          <thead>
-            <tr>
-              <th>Dirección</th>
-              <th>Trámite</th>
-              <th>Descripción</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="proc in proceduresStore.procedures" :key="proc.id_tramite">
-              <td>{{ directionsStore.directionMap[proc.id_direcciones] || 'N/A' }}</td>
-              <td><strong>{{ proc.nombre }}</strong></td>
-              <td class="description-cell">{{ proc.descripcion }}</td>
-              <td class="actions-cell">
-                <router-link :to="{ name: 'procedure-editor', params: { id: proc.id_tramite } }" class="table-action-btn edit">📝 Editar</router-link>
-                <button class="table-action-btn delete" @click="openDeleteConfirm(proc.id_tramite, 'procedure')">🗑️ Eliminar</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <div v-else class="empty-message">No hay trámites para mostrar.</div>
-      </div>
-    </section>
+<section class="section-container">
+  <h2 class="section-title">Trámites</h2>
+  <div class="table-container">
+    <div v-if="proceduresStore.isLoading" class="loading-message">Cargando...</div>
+    <table v-else-if="proceduresStore.procedures.length > 0">
+      <thead>
+        <tr>
+          <th>Trámite</th>
+          <th>Descripción</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="proc in proceduresStore.procedures" :key="proc.id_tramite" :class="{ 'is-inactive': proc.estado === -1 }">
+          <td><strong>{{ proc.nombre }}</strong></td>
+          <td class="description-cell">{{ proc.descripcion }}</td>
+          <td>
+            <span :class="['status-badge', proc.estado === 1 ? 'status-active' : 'status-inactive']">
+              <template v-if="proc.estado === 1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Activo
+              </template>
+              <template v-else>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                Inactivo
+              </template>
+            </span>
+          </td>
+          <td class="actions-cell">
+            <template v-if="proc.estado === 1">
+              <router-link :to="{ name: 'procedure-editor', params: { id: proc.id_tramite } }" class="table-action-btn edit">📝 Editar</router-link>
+              <button class="table-action-btn delete" @click="openDeleteConfirm(proc.id_tramite, 'procedure')">🗑️ Desactivar</button>
+            </template>
+            <template v-else>
+              <button class="table-action-btn activate" @click="proceduresStore.activateProcedure(proc.id_tramite)">🔄 Reactivar</button>
+            </template>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div v-else class="empty-message">No hay trámites para mostrar.</div>
+  </div>
+</section>
 
-    <ProcedureWizardModal
-      v-if="isWizardModalOpen"
-      :directions="directionsStore.directions"
-      @close="closeCreateProcedureModal"
-    />
-    <DirectionFormModal
-      v-if="isDirectionModalOpen"
-      :direction-to-edit="directionBeingEdited"
-      @close="closeDirectionModal"
-      @submit="handleDirectionFormSubmit"
-    />
-    <ConfirmationModal
-      v-if="isConfirmModalOpen"
-      title="Confirmar Eliminación"
-      message="¿Estás seguro?"
-      @cancel="closeConfirmModal"
-      @confirm="confirmDelete"
-    />
+    <ProcedureWizardModal v-if="isWizardModalOpen" :directions="directionsStore.directions"
+      @close="closeCreateProcedureModal" />
+    <DirectionFormModal v-if="isDirectionModalOpen" :direction-to-edit="directionBeingEdited"
+      @close="closeDirectionModal" @submit="handleDirectionFormSubmit" />
+    <ConfirmationModal v-if="isConfirmModalOpen" title="Confirmar Acción" message="¿Estás seguro?"
+      @cancel="closeConfirmModal" @confirm="confirmDelete" />
   </div>
 </template>
 
@@ -89,13 +94,13 @@ import { useProceduresStore } from '@/stores/procedures';
 import { useDirectionsStore } from '@/stores/directions';
 import DirectionFormModal from '@/components/DirectionFormModal.vue';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
-import ProcedureWizardModal from '@/components/ProcedureWizardModal.vue'; // Asistente multi-paso
+import ProcedureWizardModal from '@/components/ProcedureWizardModal.vue';
 
 const proceduresStore = useProceduresStore();
 const directionsStore = useDirectionsStore();
 
 // --- Estados para los modales ---
-const isWizardModalOpen = ref(false); // Para el nuevo asistente de trámites
+const isWizardModalOpen = ref(false);
 const isDirectionModalOpen = ref(false);
 const directionBeingEdited = ref(null);
 const isConfirmModalOpen = ref(false);
@@ -149,13 +154,14 @@ const confirmDelete = async () => {
   if (!itemToDelete.value.id) return;
   try {
     if (itemToDelete.value.type === 'procedure') {
-      await proceduresStore.deleteProcedure(itemToDelete.value.id);
+      // 👇 ¡ESTE ES EL ÚNICO CAMBIO NECESARIO!
+      await proceduresStore.deactivateProcedure(itemToDelete.value.id);
     } else if (itemToDelete.value.type === 'direction') {
       await directionsStore.deleteDirection(itemToDelete.value.id);
     }
   } catch (error) {
-    console.error('Error al eliminar:', error);
-    alert('Error al eliminar el elemento.');
+    console.error('Error al procesar la acción:', error);
+    alert('Error al procesar la acción.');
   } finally {
     closeConfirmModal();
   }
@@ -320,7 +326,8 @@ table {
   border-collapse: collapse;
 }
 
-th, td {
+th,
+td {
   padding: 1rem 1.5rem;
   text-align: left;
   border-bottom: 1px solid #e9ecef;
@@ -373,9 +380,72 @@ th {
   background-color: #f1f3f5;
 }
 
-.loading-message, .empty-message {
+/* 👇 --- ESTILOS AÑADIDOS PARA ESTADOS Y ACCIONES --- */
+
+/* Estilo para la fila inactiva completa */
+tr.is-inactive {
+  background-color: #f8f9fa;
+  color: #adb5bd;
+}
+
+tr.is-inactive strong {
+  color: #adb5bd;
+}
+
+/* Contenedor del badge de estado */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 12px;
+  text-transform: capitalize;
+}
+
+.status-badge svg {
+  margin-bottom: -2px;
+}
+
+/* Badge para estado activo */
+.status-active {
+  background-color: #e7f5ec;
+  color: #28a745;
+}
+
+.status-active svg {
+  stroke: #28a745;
+}
+
+/* Badge para estado inactivo */
+.status-inactive {
+  background-color: #fff0f1;
+  color: #dc3545;
+}
+
+.status-inactive svg {
+  stroke: #dc3545;
+}
+
+/* Estilo para el nuevo botón de reactivar */
+.table-action-btn.activate {
+  color: #0d6efd;
+}
+
+/* Asegura que los botones en filas inactivas no se vean tan opacos */
+tr.is-inactive .actions-cell button,
+tr.is-inactive .actions-cell a {
+  opacity: 1;
+}
+
+/* --- Fin de Estilos Añadidos --- */
+
+.loading-message,
+.empty-message {
   text-align: center;
   padding: 2rem;
   color: #6c757d;
 }
+
 </style>
