@@ -3,6 +3,9 @@
     <header class="main-header">
       <h1 class="main-title">Gestión de Trámites y Direcciones</h1>
       <div class="top-actions">
+        <button class="action-btn memory-btn" @click="handleUpdateMemory" :disabled="flowiseStore.isLoading">
+          {{ flowiseStore.isLoading ? 'Actualizando...' : '🧠 Actualizar Memoria' }}
+        </button>
         <button class="action-btn" @click="openCreateProcedureModal">+ Crear Trámite</button>
         <button class="action-btn" @click="openCreateDirectionModal">+ Crear Dirección</button>
       </div>
@@ -106,21 +109,35 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, nextTick } from 'vue';
+import { ref, onMounted, computed, nextTick, inject } from 'vue';
 import { useProceduresStore } from '@/stores/procedures';
 import { useDirectionsStore } from '@/stores/directions';
+import { useFlowiseStore } from '@/stores/flowise';
 import DirectionFormModal from '@/components/DirectionFormModal.vue';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
 import ProcedureWizardModal from '@/components/ProcedureWizardModal.vue';
 import ProceduresListModal from '@/components/ProceduresListModal.vue';
 
+// --- Inicialización de Stores y Servicios ---
 const proceduresStore = useProceduresStore();
 const directionsStore = useDirectionsStore();
+const flowiseStore = useFlowiseStore();
+const addNotification = inject('addNotification'); // Obtiene la función global de notificaciones
+
+// --- Lógica del Botón "Actualizar Memoria" ---
+const handleUpdateMemory = async () => {
+  addNotification('Iniciando la actualización de la memoria...', 'info');
+  try {
+    await flowiseStore.updateMemory();
+    addNotification('¡Memoria actualizada correctamente!', 'success');
+  } catch (error) {
+    addNotification('Ocurrió un error al actualizar la memoria.', 'error');
+  }
+};
 
 // --- Referencias y Estados ---
 const itemToDelete = ref({ id: null, type: null, name: '' });
-const proceduresTable = ref(null); // <-- Referencia para la tabla
-
+const proceduresTable = ref(null);
 const isWizardModalOpen = ref(false);
 const isDirectionModalOpen = ref(false);
 const directionBeingEdited = ref(null);
@@ -129,47 +146,39 @@ const selectedDirection = ref(null);
 const isProceduresModalOpen = ref(false);
 const filteredDirectionId = ref(null);
 
+// --- Lógica de Filtro y Visualización (Propiedades Computadas) ---
 const allDirections = computed(() => directionsStore.directions);
 const displayedProcedures = computed(() => {
   if (!filteredDirectionId.value) return proceduresStore.procedures;
   return proceduresStore.procedures.filter(p => p.id_direcciones === filteredDirectionId.value);
 });
+const confirmModalTitle = computed(() => `Confirmar Desactivación`);
+const confirmModalMessage = computed(() => `¿Estás seguro de que quieres desactivar "${itemToDelete.value.name}"?`);
 
+// --- Manejadores de Eventos y Modales ---
 const openDeleteConfirm = (id, type, name) => {
   itemToDelete.value = { id, type, name };
   isConfirmModalOpen.value = true;
 };
 const closeConfirmModal = () => { isConfirmModalOpen.value = false; };
-
-// 👇 FUNCIÓN CORREGIDA CON LA LÓGICA DE SCROLL
 const confirmDelete = async () => {
   if (!itemToDelete.value.id) return;
-
   try {
     if (itemToDelete.value.type === 'procedure') {
       await proceduresStore.deactivateProcedure(itemToDelete.value.id);
     } else if (itemToDelete.value.type === 'direction') {
       await directionsStore.deactivateDirection(itemToDelete.value.id);
     }
-
-    // Esperamos a que Vue termine de redibujar la lista
+    addNotification(`"${itemToDelete.value.name}" ha sido desactivado.`, 'success');
     await nextTick();
-
-    // Hacemos scroll suave para que la tabla quede a la vista
-    // La opción 'nearest' evita el salto si la tabla ya está visible
     proceduresTable.value?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
   } catch (error) {
+    addNotification('Error al desactivar el elemento.', 'error');
     console.error('Error al desactivar:', error);
   } finally {
     closeConfirmModal();
   }
 };
-
-const confirmModalTitle = computed(() => `Confirmar Desactivación`);
-const confirmModalMessage = computed(() => `¿Estás seguro de que quieres desactivar "${itemToDelete.value.name}"?`);
-
-// --- Resto de funciones (sin cambios) ---
 const openCreateProcedureModal = () => { isWizardModalOpen.value = true; };
 const closeCreateProcedureModal = () => { isWizardModalOpen.value = false; };
 const openCreateDirectionModal = () => { directionBeingEdited.value = null; isDirectionModalOpen.value = true; };
@@ -178,15 +187,21 @@ const closeDirectionModal = () => { isDirectionModalOpen.value = false; };
 const openProceduresModal = (direction) => { selectedDirection.value = direction; isProceduresModalOpen.value = true; };
 const handleDirectionFormSubmit = async (data) => {
   try {
+    const action = directionBeingEdited.value ? 'actualizada' : 'creada';
     if (directionBeingEdited.value) {
       await directionsStore.updateDirection(data);
     } else {
       await directionsStore.createDirection(data);
     }
+    addNotification(`Dirección ${action} correctamente.`, 'success');
     closeDirectionModal();
-  } catch (error) { console.error('Error al guardar la dirección:', error); }
+  } catch (error) {
+    addNotification('Error al guardar la dirección.', 'error');
+    console.error('Error al guardar la dirección:', error);
+  }
 };
 
+// --- Ciclo de Vida ---
 onMounted(() => {
   proceduresStore.fetchProcedures();
   directionsStore.fetchDirections();
@@ -220,13 +235,38 @@ onMounted(() => {
 }
 
 .action-btn {
-  background-color: #42b983;
-  color: white;
   border: none;
   padding: 0.8rem 1.2rem;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.action-btn:nth-child(2),
+.action-btn:nth-child(3) {
+  background-color: #42b983;
+  color: white;
+}
+
+.action-btn:nth-child(2):hover,
+.action-btn:nth-child(3):hover {
+  background-color: #3aa873;
+}
+
+.action-btn.memory-btn {
+  background-color: #d946ef;
+  color: white;
+}
+
+.action-btn.memory-btn:hover {
+  background-color: #c026d3;
+}
+
+.action-btn:disabled {
+  background-color: #ced4da;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .section-container {

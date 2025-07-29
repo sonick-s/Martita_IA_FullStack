@@ -1,46 +1,48 @@
 services:
   mysql:
-      image: mysql:8.3
-      container_name: Martita_IA_MySQL
-      ports:
-        - "3306:3306"
-      env_file:
-        - ./mysql/.env
-      volumes:
-        - /c/MARTITA_IA/datos_docker/mysql:/var/lib/mysql
-        - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
-      healthcheck:
-        test: ["CMD-SHELL", "mysqladmin ping -h localhost -u $${MYSQL_USER} -p$${MYSQL_PASSWORD}"]
-        interval: 10s
-        timeout: 5s
-        retries: 5
+    image: mysql:8.3
+    container_name: Martita_IA_MySQL
+    ports:
+      - "3306:3306"
+    env_file:
+      - ./mysql/.env
+    volumes:
+      - /c/MARTITA_IA/datos_docker/mysql:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u $${MYSQL_USER} -p$${MYSQL_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
-      build:
-        context: ./MARTITA_IA_API
-        dockerfile: Dockerfile
-      container_name: Martita_IA_Backend
-      ports:
-        - "8000:8000"
-      volumes:
-        - ./MARTITA_IA_API:/app
-      env_file:
-        - ./MARTITA_IA_API/.env
-      depends_on:
-        - mysql
+    build:
+      context: ./MARTITA_IA_API
+      dockerfile: Dockerfile
+    container_name: Martita_IA_Backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./MARTITA_IA_API:/app
+    env_file:
+      - ./MARTITA_IA_API/.env
+    depends_on:
+      - mysql
 
   flowise:
-      container_name: Martita_IA_Flowise
-      image: flowiseai/flowise
-      ports:
-        - "${PORT}:${PORT}"
-      env_file:
-        - .env
-      volumes:
-        - /c/MARTITA_IA/datos_docker/flowise:/root/.flowise
-      restart: unless-stopped
-      depends_on:
-        - backend
+    container_name: Martita_IA_Flowise
+    image: flowiseai/flowise
+    ports:
+      - "${PORT}:${PORT}"
+    env_file:
+      - .env
+    volumes:
+      - /c/MARTITA_IA/datos_docker/flowise:/root/.flowise
+      # 👇 LÍNEA AÑADIDA: Conecta una carpeta local para los embeddings
+      - /c/MARTITA_IA/datos_docker/embeddings:/app/data
+    restart: unless-stopped
+    depends_on:
+      - backend
 
   frontend:
     build:
@@ -50,10 +52,10 @@ services:
     ports:
       - "5173:5173" 
     volumes:
-      - ./MARTITA_IA_Frontend:/app     
-      - /app/node_modules              
+      - ./MARTITA_IA_Frontend:/app      
+      - /app/node_modules                  
     environment:
-      - CHOKIDAR_USEPOLLING=true       
+      - CHOKIDAR_USEPOLLING=true      
     depends_on:
       - backend
 
