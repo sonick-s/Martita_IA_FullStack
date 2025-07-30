@@ -7,9 +7,12 @@
 </template>
 
 <script setup>
-import { ref, provide } from 'vue';
+// 👇 1. AÑADE 'onMounted' A LA IMPORTACIÓN DE VUE
+import { ref, provide, onMounted } from 'vue';
 import { RouterView } from 'vue-router';
 import NotificationContainer from '@/components/NotificationContainer.vue';
+// 👇 2. IMPORTA TU NUEVA FUNCIÓN DEL CHATBOT
+import { initChatbot } from '@/services/martita-chatbot.js';
 
 const notifications = ref([]);
 let notificationId = 0;
@@ -23,8 +26,12 @@ const removeNotification = (id) => {
   notifications.value = notifications.value.filter(n => n.id !== id);
 };
 
-// Hacemos la función 'addNotification' disponible para todos los componentes hijos
 provide('addNotification', addNotification);
+
+// 👇 3. LLAMA A LA FUNCIÓN DEL CHATBOT CUANDO LA APP SE CARGA
+onMounted(() => {
+  initChatbot();
+});
 </script>
 
 <style>

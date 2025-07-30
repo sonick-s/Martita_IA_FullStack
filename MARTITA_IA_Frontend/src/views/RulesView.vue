@@ -64,15 +64,6 @@ import { ref, onMounted } from 'vue';
 import { useRulesStore } from '@/stores/rules';
 import RuleFormModal from '@/components/RuleFormModal.vue';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
-import { initChatbot } from '@/components/Martita_IA_.js'
-
-onMounted(() => {
-  try {
-    initChatbot()
-  } catch (error) {
-    console.error('Error al inicializar el chatbot:', error)
-  }
-})
 
 const rulesStore = useRulesStore();
 
@@ -83,7 +74,6 @@ const ruleBeingEdited = ref(null);
 // --- Estados para el Modal de Confirmación (Eliminar) ---
 const isConfirmModalOpen = ref(false);
 const ruleIdToDelete = ref(null);
-
 
 // --- Funciones para el Modal de Formulario ---
 const openCreateModal = () => {
@@ -101,7 +91,6 @@ const closeFormModal = () => {
   ruleBeingEdited.value = null;
 };
 
-// --- ÚNICA DEFINICIÓN DE handleFormSubmit ---
 const handleFormSubmit = async (ruleData) => {
   try {
     if (ruleBeingEdited.value) {
@@ -115,7 +104,6 @@ const handleFormSubmit = async (ruleData) => {
     alert('Ocurrió un error al guardar la regla.');
   }
 };
-
 
 // --- Funciones para el Modal de Confirmación ---
 const openDeleteConfirm = (ruleId) => {
@@ -140,12 +128,13 @@ const confirmDelete = async () => {
   }
 };
 
-
-// --- Hook de Ciclo de Vida y Función de Utilidad ---
+// --- Hook de Ciclo de Vida ---
+// Se ejecuta cuando el componente se carga
 onMounted(() => {
   rulesStore.fetchRules();
 });
 
+// --- Función de Utilidad ---
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
   const date = new Date(dateString);

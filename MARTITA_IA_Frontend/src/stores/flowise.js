@@ -20,32 +20,30 @@ export const useFlowiseStore = defineStore('flowise', {
       this.responseMessage = null;
 
       try {
-        // Leemos las variables de entorno que configuraste
-        const apiUrl = import.meta.env.VITE_FLOWISE_API_URL;
+        // 👇 CAMBIO: Construimos la URL dinámicamente
+        const apiHost = import.meta.env.VITE_FLOWISE_API_HOST;
+        const chatflowId = import.meta.env.VITE_FLOWISE_CHATFLOW_ID;
         const apiKey = import.meta.env.VITE_FLOWISE_API_KEY;
 
-        // Preparamos el cuerpo (payload) de la petición.
-        // Flowise usualmente espera un objeto con una pregunta o un input.
-        // DEBES AJUSTAR ESTO según cómo configuraste tu chatflow.
+        const apiUrl = `${apiHost}/api/v1/prediction/${chatflowId}`;
+
         const body = {
           question: "Por favor, actualiza tu memoria con la información más reciente de la base de datos.",
         };
 
-        // Hacemos la llamada POST usando apiClient (axios)
         const response = await apiClient.post(apiUrl, body, {
           headers: {
             'Authorization': `Bearer ${apiKey}`
           }
         });
 
-        // Guardamos la respuesta y la mostramos en consola
         this.responseMessage = response.data;
         console.log('Respuesta de Flowise:', this.responseMessage);
 
       } catch (err) {
         this.error = 'No se pudo conectar con la API de Flowise.';
         console.error('Error al llamar a Flowise:', err);
-        throw err; // Lanza el error para que el componente lo pueda atrapar
+        throw err;
       } finally {
         this.isLoading = false;
       }
