@@ -1,1 +1,0 @@
-# Arquitectura de la Base de Datos 

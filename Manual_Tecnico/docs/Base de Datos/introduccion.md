@@ -2,7 +2,7 @@
 
 ## Descripción General
 
-La base de datos de Martita IA es el núcleo central del sistema, diseñada para almacenar y gestionar toda la información relacionada con la inteligencia artificial conversacional. Utilizamos PostgreSQL como sistema de gestión de bases de datos relacionales por su robustez, escalabilidad y soporte para características avanzadas.
+La base de datos de Martita IA es el núcleo central del sistema, diseñada para almacenar y gestionar toda la información relacionada con la inteligencia artificial conversacional. Utilizamos **MySQL** como sistema de gestión de bases de datos relacionales por su robustez, escalabilidad y soporte para características avanzadas.
 
 ## Características Principales
 
@@ -28,51 +28,38 @@ La base de datos de Martita IA es el núcleo central del sistema, diseñada para
 
 ## Estructura de la Base de Datos
 
-### Esquemas Principales
+### Tablas Libres
 
-1. **`public`**: Esquema principal con tablas del sistema
-2. **`ai_models`**: Gestión de modelos de inteligencia artificial
-3. **`conversations`**: Historial y análisis de conversaciones
-4. **`analytics`**: Métricas y estadísticas del sistema
+1. **`usuarios`**: Registra información de los usuarios para el panel de control (Frontend)
+2. **`interacciones`**: Guarda las preguntas y respuestas del bot Martita_IA 
+3. **`prompts_bot`**: Configuraciones de comportamiento para el bot Martita_IA
 
-### Tablas Principales
+### Tablas Relacionadas
 
-#### Usuarios y Autenticación
-- `users`: Información de usuarios del sistema
-- `user_sessions`: Sesiones activas de usuarios
-- `user_permissions`: Permisos y roles
+1. **`direcciones`**: Registra los departamentos y direcciones del GADIP Cayambe
+2. **`tramites`**: Contiene la información básica del trámite y a qué dirección pertenece
+3. **`requisitos_tramite`**: Contiene todos los requisitos del trámite que se desea especificar (Importante si se necesita especificar diferentes requisitos para diferentes tipos de casos para un mismo trámite)
+4. **`pasos_tramite`**: Son los pasos que debe realizar para llevar a cabo de forma exitosa su trámite
+5. **`formularios_tramite`**: Contiene los formularios que debe llenar para realizar el trámite
 
-#### Conversaciones
-- `conversations`: Metadatos de conversaciones
-- `messages`: Mensajes individuales en conversaciones
-- `conversation_analytics`: Análisis de conversaciones
-
-#### Modelos de IA
-- `ai_models`: Configuración de modelos de IA
-- `model_versions`: Versiones de modelos
-- `model_performance`: Métricas de rendimiento
-
-#### Configuración del Sistema
-- `system_config`: Configuración general del sistema
-- `api_keys`: Claves de API para servicios externos
-- `webhooks`: Configuración de webhooks
+![Arquitectura de Base de Datos](/img/BaseDatos.png)
 
 ## Tecnologías Utilizadas
 
-### PostgreSQL 15+
-- **Versión**: 15 o superior
-- **Características**: ACID, JSON, Full-text search
-- **Extensiones**: PostGIS, pg_trgm, uuid-ossp
+### MySQL
+- **Versión**: 8.3
+- **Características**: 
+  - Soporte completo para transacciones ACID
+  - Replicación y clustering
+  - Particionamiento de tablas
+- **Extensiones**: 
+  - InnoDB como motor de almacenamiento principal
+  - Soporte para JSON nativo
 
 ### Herramientas de Gestión
-- **pgAdmin**: Interfaz gráfica para administración
-- **DBeaver**: Cliente universal de base de datos
-- **psql**: Cliente de línea de comandos
-
-### Migraciones y Versionado
-- **Herramienta**: Prisma ORM
-- **Archivos**: `prisma/schema.prisma`
-- **Comandos**: `npx prisma migrate dev`
+- **phpMyAdmin**: Interfaz gráfica para administración
+- **MySQL Workbench**: Cliente universal de base de datos
+- **MySQL CLI**: Cliente de línea de comandos
 
 ## Configuración Inicial
 
@@ -81,24 +68,24 @@ La base de datos de Martita IA es el núcleo central del sistema, diseñada para
 ```env
 # Configuración de Base de Datos
 DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=martita_db
-DB_USER=postgres
+DB_PORT=3306
+DB_NAME=martita_ia_normal
+DB_USER=tu_usuario
 DB_PASSWORD=tu_contraseña_segura
-DATABASE_URL="postgresql://postgres:tu_contraseña_segura@localhost:5432/martita_db"
+DATABASE_URL="mysql+aiomysql://tu_usuario:tu_contraseña_segura@localhost:3306/martita_ia_normal"
 ```
 
 ### Conexión de Desarrollo
 
 ```bash
-# Conectar con psql
-psql -h localhost -p 5432 -U postgres -d martita_db
+# Conectar con MySQL
+mysql -h localhost -P 3306 -u tu_usuario -p martita_ia_normal
 
-# Conectar con DBeaver
+# Conectar con MySQL
 # Host: localhost
-# Port: 5432
-# Database: martita_db
-# Username: postgres
+# Port: 3306
+# Database: martita_ia_normal
+# Username: tu_usuario
 # Password: tu_contraseña_segura
 ```
 
@@ -108,20 +95,20 @@ psql -h localhost -p 5432 -U postgres -d martita_db
 
 ```bash
 # Backup completo
-pg_dump -h localhost -U postgres martita_db > backup_$(date +%Y%m%d).sql
+mysqldump -h localhost -u tu_usuario -p martita_ia_normal > backup_$(date +%Y%m%d).sql
 
 # Backup con formato personalizado
-pg_dump -h localhost -U postgres -Fc martita_db > backup_$(date +%Y%m%d).dump
+mysqldump -h localhost -u tu_usuario -p --single-transaction --routines --triggers martita_ia_normal > backup_$(date +%Y%m%d).sql
 ```
 
 ### Restauración
 
 ```bash
 # Restaurar desde SQL
-psql -h localhost -U postgres martita_db < backup_file.sql
+mysql -h localhost -u tu_usuario -p martita_ia_normal < backup_file.sql
 
 # Restaurar desde dump personalizado
-pg_restore -h localhost -U postgres -d martita_db backup_file.dump
+mysql -h localhost -u tu_usuario -p martita_ia_normal < backup_file.sql
 ```
 
 ## Monitoreo y Mantenimiento
@@ -130,32 +117,35 @@ pg_restore -h localhost -U postgres -d martita_db backup_file.dump
 
 ```sql
 -- Verificar conexiones activas
-SELECT count(*) FROM pg_stat_activity WHERE state = 'active';
+SHOW PROCESSLIST;
 
 -- Verificar tamaño de la base de datos
-SELECT pg_size_pretty(pg_database_size('martita_db'));
+SELECT 
+    table_schema AS 'Database',
+    ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS 'DB Size in MB'
+FROM information_schema.tables 
+WHERE table_schema = 'martita_ia_normal';
 
 -- Verificar tablas más grandes
 SELECT 
-    schemaname,
-    tablename,
-    pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size
-FROM pg_tables 
-ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
+    table_name,
+    ROUND(((data_length + index_length) / 1024 / 1024), 2) AS 'Size in MB'
+FROM information_schema.tables 
+WHERE table_schema = 'martita_ia_normal'
+ORDER BY (data_length + index_length) DESC;
 ```
 
 ### Mantenimiento Regular
 
 ```sql
 -- Actualizar estadísticas
-ANALYZE;
+ANALYZE TABLE usuarios, interacciones, tramites;
 
--- Vacuum para liberar espacio
-VACUUM ANALYZE;
+-- Optimizar tablas
+OPTIMIZE TABLE usuarios, interacciones, tramites;
 
 -- Reindexar tablas importantes
-REINDEX TABLE conversations;
-REINDEX TABLE messages;
+REPAIR TABLE usuarios, interacciones, tramites;
 ```
 
 ## Seguridad
@@ -166,18 +156,19 @@ REINDEX TABLE messages;
 2. **Acceso Limitado**: Restringir acceso solo a usuarios necesarios
 3. **Backup Regular**: Realizar backups diarios
 4. **Monitoreo**: Revisar logs de acceso regularmente
-5. **Actualizaciones**: Mantener PostgreSQL actualizado
+5. **Actualizaciones**: Mantener MySQL actualizado
 
 ### Configuración de Seguridad
 
 ```sql
 -- Crear usuario específico para la aplicación
-CREATE USER martita_app WITH PASSWORD 'contraseña_segura';
+CREATE USER 'martita_app'@'localhost' IDENTIFIED BY 'contraseña_segura';
 
 -- Otorgar permisos específicos
-GRANT CONNECT ON DATABASE martita_db TO martita_app;
-GRANT USAGE ON SCHEMA public TO martita_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO martita_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON martita_ia_normal.* TO 'martita_app'@'localhost';
+
+-- Aplicar cambios
+FLUSH PRIVILEGES;
 ```
 
 ## Próximos Pasos
@@ -191,6 +182,6 @@ Después de familiarizarte con la introducción:
 
 ## Recursos Adicionales
 
-- [Documentación oficial de PostgreSQL](https://www.postgresql.org/docs/)
-- [Guía de Prisma ORM](https://www.prisma.io/docs/)
-- [Mejores prácticas de PostgreSQL](https://www.postgresql.org/docs/current/admin.html) 
+- [Documentación oficial de MySQL](https://dev.mysql.com/doc/)
+- [Guía de SQLAlchemy](https://docs.sqlalchemy.org/)
+- [Mejores prácticas de MySQL](https://dev.mysql.com/doc/refman/8.0/en/optimization.html) 

@@ -16,16 +16,13 @@ This website is built using [Docusaurus](https://docusaurus.io/), a modern stati
 - [ ] Material de Apoyo
 
 ## Installation y Despliegue
-- [ ] Instalacion Manual 
-- [ ] Instalacion Con docker
-- [ ] Despliegue Con Docker
+- [*] Instalacion Manual 
+- [*] Instalacion Con docker
+- [*] Despliegue Con Docker
 
 ## Base de Datos
-- [ ] Introduccion
-- [ ] Componentes
-- [ ] Arquitectura
-- [ ] Funcionalidades
-- [ ] Material de Apoyo
+- [*] Introduccion
+- [*] Componentes
 
 ## Api Rest
 - [ ] Introduccion (Swagger)

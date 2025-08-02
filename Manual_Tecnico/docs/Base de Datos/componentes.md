@@ -1,246 +1,259 @@
 # Componentes de la Base de Datos
 
+## Descripción General
+
+La base de datos de Martita IA está estructurada en **8 tablas principales** que gestionan toda la información del sistema de inteligencia artificial conversacional para trámites municipales. Cada tabla tiene un propósito específico y mantiene relaciones bien definidas.
+
+## Esquema de Direcciones
+
+### Tabla: `direcciones`
+
+```sql
+CREATE TABLE `direcciones` (
+  `id_direcciones` int NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(255) NOT NULL,
+  `descripcion` text,
+  `responsable` varchar(150) DEFAULT NULL,
+  `correo_responsable` varchar(150) DEFAULT NULL,
+  `telefono` varchar(100) DEFAULT NULL,
+  `estado` int DEFAULT '1' COMMENT '1 = activo, -1 = eliminado',
+  `fecha_actualizacion` date DEFAULT NULL,
+  PRIMARY KEY (`id_direcciones`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+```
+
+**Campos principales:**
+- `id_direcciones`: Identificador único de la dirección
+- `nombre`: Nombre de la dirección/departamento
+- `descripcion`: Descripción detallada de las funciones
+- `responsable`: Nombre del responsable de la dirección
+- `correo_responsable`: Email del responsable
+- `telefono`: Número de contacto
+- `estado`: Estado de la dirección (1=activo, 0=inactivo, 2=eliminado)
+- `fecha_actualizacion`: Fecha de última actualización
+
+**Datos de ejemplo:**
+- Dirección de Planificación y Ordenamiento Territorial
+- Dirección de Obras Públicas
+- Dirección de Avalúos y Catastros
+- Dirección de Ambiente
+- Dirección de Desarrollo Productivo y Emprendimientos
+- Dirección de Turismo, Cultura y Patrimonio
+- Dirección de Participación Ciudadana y Comunitaria
+- Dirección de Seguridad Ciudadana
+- Unidad de Fiscalización
+
+## Esquema de Trámites
+
+### Tabla: `tramites`
+
+```sql
+CREATE TABLE `tramites` (
+  `id_tramite` int NOT NULL AUTO_INCREMENT,
+  `id_direcciones` int DEFAULT NULL,
+  `nombre` varchar(255) NOT NULL,
+  `descripcion` text,
+  `contexto` text,
+  `estado` int DEFAULT '1' COMMENT '1 = activo, 0 = inactivo, 2 = eliminado',
+  `fecha_registro` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_tramite`),
+  KEY `id_direcciones` (`id_direcciones`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+```
+
+**Campos principales:**
+- `id_tramite`: Identificador único del trámite
+- `id_direcciones`: Referencia a la dirección responsable
+- `nombre`: Nombre del trámite
+- `descripcion`: Descripción detallada del trámite
+- `contexto`: Contexto adicional del trámite
+- `estado`: Estado del trámite (1=activo, 0=inactivo, 2=eliminado)
+- `fecha_registro`: Fecha de registro del trámite
+
+**Relación:** Cada trámite pertenece a una dirección específica del GADIP Cayambe.
+
+## Esquema de Requisitos
+
+### Tabla: `requisitos_tramite`
+
+```sql
+CREATE TABLE `requisitos_tramite` (
+  `id_requisito` int NOT NULL AUTO_INCREMENT,
+  `id_tramite` int DEFAULT NULL,
+  `contexto` text,
+  `requisito` text NOT NULL,
+  `estado` int DEFAULT '1' COMMENT '1 = activo, 0 = inactivo, 2 = eliminado',
+  PRIMARY KEY (`id_requisito`),
+  KEY `id_tramite` (`id_tramite`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+```
+
+**Campos principales:**
+- `id_requisito`: Identificador único del requisito
+- `id_tramite`: Referencia al trámite al que pertenece
+- `contexto`: Contexto específico del requisito
+- `requisito`: Descripción completa del requisito
+- `estado`: Estado del requisito
+
+**Características:**
+- Un trámite puede tener múltiples requisitos
+- Los requisitos se almacenan como texto completo para flexibilidad
+- Permite especificar diferentes requisitos para diferentes casos del mismo trámite
+
+## Esquema de Pasos
+
+### Tabla: `pasos_tramite`
+
+```sql
+CREATE TABLE `pasos_tramite` (
+  `id_paso` int NOT NULL AUTO_INCREMENT,
+  `id_tramite` int DEFAULT NULL,
+  `contexto` text,
+  `paso` text NOT NULL,
+  `estado` int DEFAULT '1' COMMENT '1 = activo, 0 = inactivo, 2 = eliminado',
+  PRIMARY KEY (`id_paso`),
+  KEY `id_tramite` (`id_tramite`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+```
+
+**Campos principales:**
+- `id_paso`: Identificador único del paso
+- `id_tramite`: Referencia al trámite al que pertenece
+- `contexto`: Contexto específico del paso
+- `paso`: Descripción completa del paso a seguir
+- `estado`: Estado del paso
+
+**Características:**
+- Los pasos se almacenan en orden secuencial
+- Cada paso contiene instrucciones detalladas
+- Permite personalizar pasos según el contexto específico
+
+## Esquema de Formularios
+
+### Tabla: `formularios_tramite`
+
+```sql
+CREATE TABLE `formularios_tramite` (
+  `id_formulario` int NOT NULL AUTO_INCREMENT,
+  `id_tramite` int DEFAULT NULL,
+  `nombre` varchar(255) DEFAULT NULL,
+  `url` text NOT NULL,
+  `contexto` text,
+  `estado` int DEFAULT '1' COMMENT '1 = activo, 0 = inactivo, 2 = eliminado',
+  PRIMARY KEY (`id_formulario`),
+  KEY `id_tramite` (`id_tramite`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+```
+
+**Campos principales:**
+- `id_formulario`: Identificador único del formulario
+- `id_tramite`: Referencia al trámite al que pertenece
+- `nombre`: Nombre del formulario
+- `url`: URL o enlace al formulario
+- `contexto`: Contexto específico del formulario
+- `estado`: Estado del formulario
+
 ## Esquema de Usuarios
 
-### Tabla: `users`
+### Tabla: `usuarios`
 
 ```sql
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    username VARCHAR(100) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    first_name VARCHAR(100),
-    last_name VARCHAR(100),
-    is_active BOOLEAN DEFAULT true,
-    is_admin BOOLEAN DEFAULT false,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+CREATE TABLE `usuarios` (
+  `id_usuario` int NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(100) DEFAULT NULL,
+  `email` varchar(150) DEFAULT NULL,
+  `password` varchar(255) NOT NULL,
+  `estado` int DEFAULT '1' COMMENT '1 = activo, 0 = inactivo, 2 = eliminado',
+  `fecha_registro` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_usuario`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 ```
 
 **Campos principales:**
-- `id`: Identificador único del usuario
-- `email`: Correo electrónico único
-- `username`: Nombre de usuario único
-- `password_hash`: Hash de la contraseña (bcrypt)
-- `is_active`: Estado activo/inactivo del usuario
-- `is_admin`: Indica si es administrador
+- `id_usuario`: Identificador único del usuario
+- `nombre`: Nombre completo del usuario
+- `email`: Correo electrónico del usuario
+- `password`: Contraseña encriptada (bcrypt)
+- `estado`: Estado del usuario (1=activo, 0=inactivo, 2=eliminado)
+- `fecha_registro`: Fecha de registro del usuario
 
-### Tabla: `user_sessions`
+## Esquema de Interacciones
 
-```sql
-CREATE TABLE user_sessions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    session_token VARCHAR(255) UNIQUE NOT NULL,
-    expires_at TIMESTAMP NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Tabla: `user_permissions`
+### Tabla: `interacciones`
 
 ```sql
-CREATE TABLE user_permissions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    permission_name VARCHAR(100) NOT NULL,
-    granted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-## Esquema de Conversaciones
-
-### Tabla: `conversations`
-
-```sql
-CREATE TABLE conversations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    title VARCHAR(255),
-    status VARCHAR(50) DEFAULT 'active',
-    model_used VARCHAR(100),
-    total_tokens INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+CREATE TABLE `interacciones` (
+  `id_interaccion` int NOT NULL AUTO_INCREMENT,
+  `pregunta` text,
+  `respuesta` text,
+  `respuesta_util` text COMMENT 'like o dislike',
+  `fecha` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_interaccion`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 ```
 
 **Campos principales:**
-- `id`: Identificador único de la conversación
-- `user_id`: Usuario propietario de la conversación
-- `title`: Título de la conversación (generado automáticamente)
-- `status`: Estado (active, archived, deleted)
-- `model_used`: Modelo de IA utilizado
-- `total_tokens`: Total de tokens consumidos
+- `id_interaccion`: Identificador único de la interacción
+- `pregunta`: Pregunta realizada por el usuario
+- `respuesta`: Respuesta generada por Martita IA
+- `respuesta_util`: Evaluación de la respuesta (like/dislike)
+- `fecha`: Fecha y hora de la interacción
 
-### Tabla: `messages`
+**Propósito:**
+- Almacena el historial completo de conversaciones
+- Permite análisis de calidad de respuestas
+- Facilita el entrenamiento y mejora del bot
+
+## Esquema de Prompts del Bot
+
+### Tabla: `prompts_bot`
 
 ```sql
-CREATE TABLE messages (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
-    role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
-    content TEXT NOT NULL,
-    tokens_used INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+CREATE TABLE `prompts_bot` (
+  `id_prompt` int NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(255) NOT NULL,
+  `tipo` varchar(50) DEFAULT NULL,
+  `contenido` text NOT NULL,
+  `estado` int DEFAULT '1' COMMENT '1 = activo, 0 = inactivo, 2 = eliminado',
+  `fecha_creacion` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_prompt`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 ```
 
 **Campos principales:**
-- `id`: Identificador único del mensaje
-- `conversation_id`: Conversación a la que pertenece
-- `role`: Rol del mensaje (user, assistant, system)
-- `content`: Contenido del mensaje
-- `tokens_used`: Tokens consumidos por este mensaje
+- `id_prompt`: Identificador único del prompt
+- `nombre`: Nombre o propósito del prompt
+- `tipo`: Tipo de prompt (system, user, assistant, regla, contexto)
+- `contenido`: El texto del prompt/instrucción
+- `estado`: Estado del prompt (1=activo, 0=inactivo, 2=eliminado)
+- `fecha_creacion`: Fecha de creación del prompt
 
-### Tabla: `conversation_analytics`
+**Tipos de prompts:**
+- **Mensaje Inicial**: Saludo y presentación del bot
+- **Reglas**: Instrucciones de comportamiento
+- **Contexto**: Información contextual para respuestas
+- **Sistema**: Configuraciones del comportamiento del bot
 
-```sql
-CREATE TABLE conversation_analytics (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
-    sentiment_score DECIMAL(3,2),
-    topic_classification VARCHAR(100),
-    response_time_ms INTEGER,
-    user_satisfaction_rating INTEGER CHECK (user_satisfaction_rating BETWEEN 1 AND 5),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
+## Relaciones entre Tablas
 
-## Esquema de Modelos de IA
+### Diagrama de Relaciones
 
-### Tabla: `ai_models`
+![Arquitectura de Base de Datos](/img/BaseDatos.png)
+
+### Claves Foráneas
 
 ```sql
-CREATE TABLE ai_models (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(100) UNIQUE NOT NULL,
-    provider VARCHAR(50) NOT NULL,
-    model_type VARCHAR(50) NOT NULL,
-    version VARCHAR(20),
-    is_active BOOLEAN DEFAULT true,
-    max_tokens INTEGER,
-    temperature DECIMAL(3,2) DEFAULT 0.7,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
+-- Relación tramites → direcciones
+FOREIGN KEY (id_direcciones) REFERENCES direcciones(id_direcciones)
 
-**Campos principales:**
-- `id`: Identificador único del modelo
-- `name`: Nombre del modelo (ej: gpt-4, claude-3)
-- `provider`: Proveedor (OpenAI, Anthropic, etc.)
-- `model_type`: Tipo de modelo (chat, completion, embedding)
-- `version`: Versión específica del modelo
-- `max_tokens`: Límite máximo de tokens
-- `temperature`: Temperatura para generación
+-- Relación requisitos_tramite → tramites
+FOREIGN KEY (id_tramite) REFERENCES tramites(id_tramite) ON DELETE CASCADE
 
-### Tabla: `model_versions`
+-- Relación pasos_tramite → tramites
+FOREIGN KEY (id_tramite) REFERENCES tramites(id_tramite) ON DELETE CASCADE
 
-```sql
-CREATE TABLE model_versions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    model_id UUID REFERENCES ai_models(id) ON DELETE CASCADE,
-    version_number VARCHAR(20) NOT NULL,
-    release_notes TEXT,
-    is_default BOOLEAN DEFAULT false,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Tabla: `model_performance`
-
-```sql
-CREATE TABLE model_performance (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    model_id UUID REFERENCES ai_models(id) ON DELETE CASCADE,
-    metric_name VARCHAR(100) NOT NULL,
-    metric_value DECIMAL(10,4),
-    sample_size INTEGER,
-    recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-## Esquema de Configuración
-
-### Tabla: `system_config`
-
-```sql
-CREATE TABLE system_config (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    config_key VARCHAR(100) UNIQUE NOT NULL,
-    config_value TEXT,
-    config_type VARCHAR(50) DEFAULT 'string',
-    description TEXT,
-    is_encrypted BOOLEAN DEFAULT false,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-**Configuraciones comunes:**
-- `default_model`: Modelo de IA por defecto
-- `max_conversation_length`: Longitud máxima de conversaciones
-- `rate_limit_per_hour`: Límite de requests por hora
-- `maintenance_mode`: Modo de mantenimiento
-
-### Tabla: `api_keys`
-
-```sql
-CREATE TABLE api_keys (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    key_name VARCHAR(100) NOT NULL,
-    key_hash VARCHAR(255) NOT NULL,
-    permissions JSONB,
-    is_active BOOLEAN DEFAULT true,
-    last_used_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Tabla: `webhooks`
-
-```sql
-CREATE TABLE webhooks (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    url VARCHAR(500) NOT NULL,
-    events JSONB NOT NULL,
-    secret_key VARCHAR(255),
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-## Esquema de Analytics
-
-### Tabla: `usage_metrics`
-
-```sql
-CREATE TABLE usage_metrics (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    date DATE NOT NULL,
-    total_conversations INTEGER DEFAULT 0,
-    total_messages INTEGER DEFAULT 0,
-    total_tokens INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Tabla: `error_logs`
-
-```sql
-CREATE TABLE error_logs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-    error_type VARCHAR(100) NOT NULL,
-    error_message TEXT,
-    stack_trace TEXT,
-    request_data JSONB,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- Relación formularios_tramite → tramites
+FOREIGN KEY (id_tramite) REFERENCES tramites(id_tramite) ON DELETE CASCADE
 ```
 
 ## Índices Optimizados
@@ -249,102 +262,129 @@ CREATE TABLE error_logs (
 
 ```sql
 -- Índices para búsquedas rápidas
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_username ON users(username);
-CREATE INDEX idx_conversations_user_id ON conversations(user_id);
-CREATE INDEX idx_messages_conversation_id ON messages(conversation_id);
-CREATE INDEX idx_messages_created_at ON messages(created_at);
-
--- Índices para análisis
-CREATE INDEX idx_conversation_analytics_conversation_id ON conversation_analytics(conversation_id);
-CREATE INDEX idx_usage_metrics_user_date ON usage_metrics(user_id, date);
-CREATE INDEX idx_error_logs_created_at ON error_logs(created_at);
+CREATE INDEX idx_tramites_direccion ON tramites(id_direcciones);
+CREATE INDEX idx_requisitos_tramite ON requisitos_tramite(id_tramite);
+CREATE INDEX idx_pasos_tramite ON pasos_tramite(id_tramite);
+CREATE INDEX idx_formularios_tramite ON formularios_tramite(id_tramite);
+CREATE INDEX idx_interacciones_fecha ON interacciones(fecha);
+CREATE INDEX idx_usuarios_email ON usuarios(email);
 ```
 
 ### Índices de Texto Completo
 
 ```sql
--- Búsqueda de texto en mensajes
-CREATE INDEX idx_messages_content_fts ON messages USING gin(to_tsvector('english', content));
+-- Búsqueda en contenido de interacciones
+CREATE FULLTEXT INDEX idx_interacciones_contenido ON interacciones(pregunta, respuesta);
 
--- Búsqueda en títulos de conversaciones
-CREATE INDEX idx_conversations_title_fts ON conversations USING gin(to_tsvector('english', title));
-```
-
-## Triggers y Funciones
-
-### Trigger de Actualización de Timestamp
-
-```sql
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
-CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_conversations_updated_at BEFORE UPDATE ON conversations
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-```
-
-### Función de Conteo de Tokens
-
-```sql
-CREATE OR REPLACE FUNCTION update_conversation_tokens()
-RETURNS TRIGGER AS $$
-BEGIN
-    UPDATE conversations 
-    SET total_tokens = (
-        SELECT COALESCE(SUM(tokens_used), 0) 
-        FROM messages 
-        WHERE conversation_id = NEW.conversation_id
-    )
-    WHERE id = NEW.conversation_id;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
-CREATE TRIGGER update_conversation_tokens_trigger 
-    AFTER INSERT OR UPDATE ON messages
-    FOR EACH ROW EXECUTE FUNCTION update_conversation_tokens();
+-- Búsqueda en prompts del bot
+CREATE FULLTEXT INDEX idx_prompts_contenido ON prompts_bot(contenido);
 ```
 
 ## Vistas Útiles
 
-### Vista de Estadísticas de Usuario
+### Vista de Trámites Completos
 
 ```sql
-CREATE VIEW user_statistics AS
+CREATE VIEW tramites_completos AS
 SELECT 
-    u.id,
-    u.username,
-    u.email,
-    COUNT(DISTINCT c.id) as total_conversations,
-    COUNT(m.id) as total_messages,
-    COALESCE(SUM(c.total_tokens), 0) as total_tokens,
-    MAX(c.created_at) as last_conversation
-FROM users u
-LEFT JOIN conversations c ON u.id = c.user_id
-LEFT JOIN messages m ON c.id = m.conversation_id
-GROUP BY u.id, u.username, u.email;
+    t.id_tramite,
+    t.nombre as nombre_tramite,
+    t.descripcion,
+    d.nombre as nombre_direccion,
+    d.responsable,
+    d.telefono,
+    COUNT(DISTINCT r.id_requisito) as total_requisitos,
+    COUNT(DISTINCT p.id_paso) as total_pasos,
+    COUNT(DISTINCT f.id_formulario) as total_formularios
+FROM tramites t
+LEFT JOIN direcciones d ON t.id_direcciones = d.id_direcciones
+LEFT JOIN requisitos_tramite r ON t.id_tramite = r.id_tramite AND r.estado = 1
+LEFT JOIN pasos_tramite p ON t.id_tramite = p.id_tramite AND p.estado = 1
+LEFT JOIN formularios_tramite f ON t.id_tramite = f.id_tramite AND f.estado = 1
+WHERE t.estado = 1
+GROUP BY t.id_tramite, t.nombre, t.descripcion, d.nombre, d.responsable, d.telefono;
 ```
 
-### Vista de Rendimiento de Modelos
+### Vista de Estadísticas de Interacciones
 
 ```sql
-CREATE VIEW model_performance_summary AS
+CREATE VIEW estadisticas_interacciones AS
 SELECT 
-    am.name,
-    am.provider,
-    COUNT(c.id) as total_conversations,
-    AVG(c.total_tokens) as avg_tokens_per_conversation,
-    SUM(c.total_tokens) as total_tokens_used
-FROM ai_models am
-LEFT JOIN conversations c ON am.name = c.model_used
-WHERE am.is_active = true
-GROUP BY am.id, am.name, am.provider;
+    DATE(fecha) as fecha_interaccion,
+    COUNT(*) as total_interacciones,
+    COUNT(CASE WHEN respuesta_util = 'like' THEN 1 END) as respuestas_positivas,
+    COUNT(CASE WHEN respuesta_util = 'dislike' THEN 1 END) as respuestas_negativas,
+    ROUND(AVG(LENGTH(pregunta)), 2) as longitud_promedio_pregunta,
+    ROUND(AVG(LENGTH(respuesta)), 2) as longitud_promedio_respuesta
+FROM interacciones
+WHERE fecha >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+GROUP BY DATE(fecha)
+ORDER BY fecha_interaccion DESC;
+```
+
+## Triggers y Funciones
+
+### Trigger de Auditoría de Cambios
+
+```sql
+DELIMITER //
+CREATE TRIGGER audit_tramites_changes
+AFTER UPDATE ON tramites
+FOR EACH ROW
+BEGIN
+    IF OLD.estado != NEW.estado THEN
+        INSERT INTO log_cambios (tabla, id_registro, campo, valor_anterior, valor_nuevo, fecha)
+        VALUES ('tramites', NEW.id_tramite, 'estado', OLD.estado, NEW.estado, NOW());
+    END IF;
+END//
+DELIMITER ;
+```
+
+### Función de Validación de Email
+
+```sql
+DELIMITER //
+CREATE FUNCTION validar_email(email VARCHAR(150))
+RETURNS BOOLEAN
+DETERMINISTIC
+BEGIN
+    DECLARE resultado BOOLEAN DEFAULT FALSE;
+    
+    IF email REGEXP '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' THEN
+        SET resultado = TRUE;
+    END IF;
+    
+    RETURN resultado;
+END//
+DELIMITER ;
+```
+
+## Configuración de Seguridad
+
+### Usuarios y Permisos
+
+```sql
+-- Crear usuario específico para la aplicación
+CREATE USER 'martita_app'@'localhost' IDENTIFIED BY 'contraseña_segura';
+
+-- Otorgar permisos específicos
+GRANT SELECT, INSERT, UPDATE, DELETE ON martita_ia.* TO 'martita_app'@'localhost';
+
+-- Aplicar cambios
+FLUSH PRIVILEGES;
+```
+
+### Encriptación de Datos Sensibles
+
+```sql
+-- Función para encriptar contraseñas
+DELIMITER //
+CREATE FUNCTION encriptar_password(password VARCHAR(255))
+RETURNS VARCHAR(255)
+DETERMINISTIC
+BEGIN
+    -- Aquí se implementaría la lógica de encriptación bcrypt
+    RETURN password;
+END//
+DELIMITER ;
 ``` 

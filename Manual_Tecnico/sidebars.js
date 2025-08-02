@@ -32,9 +32,6 @@ const sidebars = {
       items: [
         'Base de Datos/introduccion',
         'Base de Datos/componentes',
-        'Base de Datos/arquitectura',
-        'Base de Datos/funcionalidades',
-        'Base de Datos/material-apoyo',
       ],
     },
     {
