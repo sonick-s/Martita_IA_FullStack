@@ -42,8 +42,6 @@ const sidebars = {
         'Api Rest/arquitectura',
         'Api Rest/endpoints',
         'Api Rest/seguridad',
-        'Api Rest/funcionalidades',
-        'Api Rest/material-apoyo',
       ],
     },
     {

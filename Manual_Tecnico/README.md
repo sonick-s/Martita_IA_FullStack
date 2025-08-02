@@ -25,12 +25,10 @@ This website is built using [Docusaurus](https://docusaurus.io/), a modern stati
 - [*] Componentes
 
 ## Api Rest
-- [ ] Introduccion (Swagger)
-- [ ] Arquitectura
-- [ ] Endpoints
-- [ ] Seguridad
-- [ ] Funcionalidades
-- [ ] Material de Apoyo
+- [*] Introduccion (Swagger)
+- [*] Arquitectura
+- [*] Endpoints
+- [*] Seguridad
 
 ## Frontend
 - [ ] Introduccion (Bonito)

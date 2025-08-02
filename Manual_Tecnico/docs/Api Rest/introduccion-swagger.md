@@ -2,7 +2,35 @@
 
 ## Descripción General
 
-La API REST de Martita IA proporciona una interfaz programática para interactuar con el sistema de inteligencia artificial conversacional. La API está documentada completamente con Swagger/OpenAPI 3.0, permitiendo una fácil integración y testing.
+La API REST de Martita IA proporciona una interfaz programática para interactuar con el sistema de inteligencia artificial conversacional para trámites municipales del GADIP Cayambe. La API está construida con **FastAPI** y documentada completamente con Swagger/OpenAPI 3.0, permitiendo una fácil integración y testing.
+
+## Estructura del Proyecto
+
+```
+MARTITA_IA_API/
+├── app/
+│   ├── main.py              # Punto de entrada de la aplicación
+│   ├── config.py            # Configuración de variables de entorno
+│   ├── database.py          # Configuración de base de datos
+│   ├── security.py          # Autenticación y seguridad
+│   ├── routers/             # Endpoints de la API
+│   │   ├── direcciones.py
+│   │   ├── tramites.py
+│   │   ├── requisitos_tramite.py
+│   │   ├── pasos_tramite.py
+│   │   ├── formularios_tramite.py
+│   │   ├── usuarios.py
+│   │   ├── interacciones.py
+│   │   ├── prompts_bot.py
+│   │   ├── login.py
+│   │   └── construir_tramite.py
+│   ├── models/              # Modelos de SQLAlchemy
+│   ├── schemas/             # Esquemas de Pydantic
+│   └── controllers/         # Lógica de negocio
+├── requirements.txt          # Dependencias de Python
+└── Dockerfile              # Configuración de Docker
+```
+
 
 ## Características Principales
 
@@ -13,85 +41,131 @@ La API REST de Martita IA proporciona una interfaz programática para interactua
 - Autenticación mediante JWT
 
 ### 2. **Documentación Automática**
-- Swagger UI integrado en `/api/docs`
+- Swagger UI integrado en `/docs`
 - Especificación OpenAPI 3.0
 - Ejemplos de requests y responses
 - Testing interactivo desde el navegador
 
 ### 3. **Seguridad Robusta**
-- Autenticación JWT
-- Rate limiting por IP y usuario
-- Validación de entrada
-- CORS configurado
+- Autenticación JWT con bcrypt
+- Validación de entrada con Pydantic
+- CORS configurado para desarrollo
+- Middleware de seguridad
 
-### 4. **Escalabilidad**
-- Diseño modular
-- Caché con Redis
-- Logging estructurado
-- Monitoreo de métricas
+### 4. **Base de Datos Asíncrona**
+- SQLAlchemy con MySQL
+- Operaciones asíncronas
+- Conexiones optimizadas
+- Transacciones ACID
+
+## Tecnologías Utilizadas
+
+### Framework y Librerías
+- **FastAPI**: Framework web moderno y rápido
+- **SQLAlchemy**: ORM para base de datos
+- **Pydantic**: Validación de datos y serialización
+- **JWT**: Autenticación con tokens
+- **bcrypt**: Encriptación de contraseñas
+- **aiomysql**: Driver asíncrono para MySQL
+
+### Versiones Principales
+```txt
+fastapi==0.115.12
+sqlalchemy==2.0.41
+pydantic==2.11.5
+python-jose==3.5.0
+passlib==1.7.4
+aiomysql==0.2.0
+```
 
 ## Acceso a la Documentación
 
 ### Swagger UI
 ```
-http://localhost:3000/api/docs
+http://localhost:8000/docs
 ```
 
 ### Especificación OpenAPI
 ```
-http://localhost:3000/api/docs/swagger.json
+http://localhost:8000/openapi.json
 ```
 
-### Especificación YAML
+### ReDoc (Documentación Alternativa)
 ```
-http://localhost:3000/api/docs/swagger.yaml
+http://localhost:8000/redoc
 ```
 
 ## Estructura de la API
 
 ### Base URL
 ```
-https://api.martita-ia.com/v1
+http://localhost:8000
 ```
-
-### Versiones
-- **v1**: Versión actual (estable)
-- **v2**: En desarrollo (beta)
 
 ### Endpoints Principales
 
 #### Autenticación
-- `POST /auth/register` - Registro de usuarios
-- `POST /auth/login` - Inicio de sesión
-- `POST /auth/refresh` - Renovar token
-- `POST /auth/logout` - Cerrar sesión
+- `POST /login` - Inicio de sesión y obtención de token JWT
 
-#### Conversaciones
-- `GET /conversations` - Listar conversaciones
-- `POST /conversations` - Crear conversación
-- `GET /conversations/{id}` - Obtener conversación
-- `PUT /conversations/{id}` - Actualizar conversación
-- `DELETE /conversations/{id}` - Eliminar conversación
+#### Direcciones (GADIP Cayambe)
+- `GET /direcciones/` - Listar todas las direcciones
+- `GET /direcciones/{id_direccion}` - Obtener dirección específica
+- `POST /direcciones/` - Crear nueva dirección
+- `PUT /direcciones/{id_direccion}` - Actualizar dirección
+- `DELETE /direcciones/{id_direccion}` - Eliminar dirección
 
-#### Mensajes
-- `GET /conversations/{id}/messages` - Listar mensajes
-- `POST /conversations/{id}/messages` - Enviar mensaje
-- `GET /messages/{id}` - Obtener mensaje específico
+#### Trámites
+- `GET /tramites/` - Listar todos los trámites
+- `GET /tramites/{id_tramite}` - Obtener trámite específico
+- `POST /tramites/` - Crear nuevo trámite
+- `PUT /tramites/{id_tramite}` - Actualizar trámite
+- `DELETE /tramites/{id_tramite}` - Eliminar trámite
 
-#### Modelos de IA
-- `GET /models` - Listar modelos disponibles
-- `GET /models/{id}` - Obtener información del modelo
-- `POST /models/{id}/chat` - Chat con modelo específico
+#### Requisitos de Trámites
+- `GET /requisitos-tramite/` - Listar requisitos
+- `GET /requisitos-tramite/{id_requisito}` - Obtener requisito específico
+- `POST /requisitos-tramite/` - Crear nuevo requisito
+- `PUT /requisitos-tramite/{id_requisito}` - Actualizar requisito
+- `DELETE /requisitos-tramite/{id_requisito}` - Eliminar requisito
+
+#### Pasos de Trámites
+- `GET /pasos-tramite/` - Listar pasos
+- `GET /pasos-tramite/{id_paso}` - Obtener paso específico
+- `POST /pasos-tramite/` - Crear nuevo paso
+- `PUT /pasos-tramite/{id_paso}` - Actualizar paso
+- `DELETE /pasos-tramite/{id_paso}` - Eliminar paso
+
+#### Formularios de Trámites
+- `GET /formularios-tramite/` - Listar formularios
+- `GET /formularios-tramite/{id_formulario}` - Obtener formulario específico
+- `POST /formularios-tramite/` - Crear nuevo formulario
+- `PUT /formularios-tramite/{id_formulario}` - Actualizar formulario
+- `DELETE /formularios-tramite/{id_formulario}` - Eliminar formulario
 
 #### Usuarios
-- `GET /users/profile` - Perfil del usuario
-- `PUT /users/profile` - Actualizar perfil
-- `GET /users/statistics` - Estadísticas del usuario
+- `GET /usuarios/` - Listar usuarios
+- `GET /usuarios/{id_usuario}` - Obtener usuario específico
+- `POST /usuarios/` - Crear nuevo usuario
+- `PUT /usuarios/{id_usuario}` - Actualizar usuario
+- `DELETE /usuarios/{id_usuario}` - Eliminar usuario
 
-#### Analytics
-- `GET /analytics/conversations` - Métricas de conversaciones
-- `GET /analytics/models` - Rendimiento de modelos
-- `GET /analytics/usage` - Uso del sistema
+#### Interacciones (Chat)
+- `GET /interacciones/` - Listar interacciones
+- `GET /interacciones/{id_interaccion}` - Obtener interacción específica
+- `POST /interacciones/` - Crear nueva interacción
+- `PUT /interacciones/{id_interaccion}` - Actualizar interacción
+- `DELETE /interacciones/{id_interaccion}` - Eliminar interacción
+
+#### Prompts del Bot
+- `GET /prompts-bot/` - Listar prompts
+- `GET /prompts-bot/{id_prompt}` - Obtener prompt específico
+- `POST /prompts-bot/` - Crear nuevo prompt
+- `PUT /prompts-bot/{id_prompt}` - Actualizar prompt
+- `DELETE /prompts-bot/{id_prompt}` - Eliminar prompt
+
+#### Construir Trámite (Endpoints Especiales)
+- `GET /construir-tramite/estructurado` - Obtener trámites estructurados
+- `GET /construir-tramite/estructurado/{tramite_id}` - Obtener trámite estructurado específico
 
 ## Autenticación
 
@@ -101,7 +175,7 @@ La API utiliza JWT (JSON Web Tokens) para autenticación:
 
 ```bash
 # Login para obtener token
-curl -X POST http://localhost:3000/api/v1/auth/login \
+curl -X POST http://localhost:8000/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "usuario@ejemplo.com",
@@ -112,13 +186,9 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 **Response:**
 ```json
 {
-  "success": true,
-  "data": {
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "expires_in": 3600,
-    "token_type": "Bearer"
-  }
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "user_id": 1
 }
 ```
 
@@ -126,7 +196,7 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 
 ```bash
 # Incluir token en headers
-curl -X GET http://localhost:3000/api/v1/conversations \
+curl -X GET http://localhost:8000/direcciones/ \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 ```
 
@@ -136,13 +206,14 @@ curl -X GET http://localhost:3000/api/v1/conversations \
 
 ```json
 {
-  "success": true,
-  "data": {
-    "id": "uuid",
-    "title": "Conversación sobre IA",
-    "created_at": "2024-01-15T10:30:00Z"
-  },
-  "message": "Conversación creada exitosamente"
+  "id_direcciones": 1,
+  "nombre": "Dirección de Planificación y Ordenamiento Territorial",
+  "descripcion": "Formular, coordinar, articular y evaluar las políticas...",
+  "responsable": "Juan Pérez",
+  "correo_responsable": "juan.perez@cayambe.gob.ec",
+  "telefono": "02-236-0001",
+  "estado": 1,
+  "fecha_actualizacion": "2025-01-15"
 }
 ```
 
@@ -150,17 +221,7 @@ curl -X GET http://localhost:3000/api/v1/conversations \
 
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Los datos proporcionados son inválidos",
-    "details": [
-      {
-        "field": "email",
-        "message": "El email es requerido"
-      }
-    ]
-  }
+  "detail": "Dirección no encontrada"
 }
 ```
 
@@ -180,159 +241,63 @@ curl -X GET http://localhost:3000/api/v1/conversations \
 
 ### 5xx - Error del Servidor
 - `500 Internal Server Error` - Error interno
-- `502 Bad Gateway` - Error de servicio externo
-- `503 Service Unavailable` - Servicio no disponible
 
-## Rate Limiting
+## Ejemplos de Uso
 
-### Límites por Defecto
-- **Usuarios autenticados**: 1000 requests/hora
-- **Usuarios anónimos**: 100 requests/hora
-- **Endpoints de IA**: 50 requests/hora
-
-### Headers de Rate Limiting
-
-```http
-X-RateLimit-Limit: 1000
-X-RateLimit-Remaining: 999
-X-RateLimit-Reset: 1642248000
-```
-
-## Paginación
-
-### Parámetros de Paginación
-- `page`: Número de página (default: 1)
-- `limit`: Elementos por página (default: 20, max: 100)
-
-### Respuesta Paginada
-
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": "uuid-1",
-      "title": "Conversación 1"
-    },
-    {
-      "id": "uuid-2", 
-      "title": "Conversación 2"
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 20,
-    "total": 150,
-    "pages": 8,
-    "has_next": true,
-    "has_prev": false
-  }
-}
-```
-
-## Filtros y Búsqueda
-
-### Parámetros de Filtrado
-- `search`: Búsqueda de texto
-- `status`: Filtrar por estado
-- `model`: Filtrar por modelo de IA
-- `date_from`: Fecha de inicio
-- `date_to`: Fecha de fin
-
-### Ejemplo de Filtrado
-
+### Obtener Todas las Direcciones
 ```bash
-GET /api/v1/conversations?search=IA&status=active&date_from=2024-01-01
+curl -X GET http://localhost:8000/direcciones/ \
+  -H "Authorization: Bearer tu_token_aqui"
 ```
 
-## Ordenamiento
-
-### Parámetros de Orden
-- `sort_by`: Campo para ordenar
-- `sort_order`: `asc` o `desc`
-
-### Ejemplo de Ordenamiento
-
+### Crear un Nuevo Trámite
 ```bash
-GET /api/v1/conversations?sort_by=created_at&sort_order=desc
+curl -X POST http://localhost:8000/tramites/ \
+  -H "Authorization: Bearer tu_token_aqui" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id_direcciones": 3,
+    "nombre": "REGULARIZACIÓN DE ÁREAS Y LINDEROS",
+    "descripcion": "Regularizar y certificar la información sobre el área...",
+    "contexto": "El trámite permite legalizar y certificar el tamaño...",
+    "estado": 1
+  }'
 ```
 
-## Webhooks
-
-### Configuración de Webhook
-
-```json
-{
-  "url": "https://tu-servidor.com/webhook",
-  "events": ["conversation.created", "message.sent"],
-  "secret": "tu_secreto_aqui"
-}
-```
-
-### Eventos Disponibles
-- `conversation.created` - Nueva conversación
-- `conversation.updated` - Conversación actualizada
-- `message.sent` - Mensaje enviado
-- `user.registered` - Usuario registrado
-
-## SDKs y Clientes
-
-### JavaScript/Node.js
-
+### Obtener Trámite Estructurado
 ```bash
-npm install @martita-ia/sdk
+curl -X GET http://localhost:8000/construir-tramite/estructurado/1 \
+  -H "Authorization: Bearer tu_token_aqui"
 ```
 
-```javascript
-import { MartitaAPI } from '@martita-ia/sdk';
+## Configuración de Desarrollo
 
-const api = new MartitaAPI({
-  baseURL: 'https://api.martita-ia.com/v1',
-  token: 'tu_token_aqui'
-});
-
-// Crear conversación
-const conversation = await api.conversations.create({
-  title: 'Mi conversación'
-});
-
-// Enviar mensaje
-const message = await api.messages.send(conversation.id, {
-  content: 'Hola, ¿cómo estás?'
-});
+### Variables de Entorno
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=tu_usuario
+DB_PASSWORD=tu_contraseña
+DB_NAME=martita_ia_normal
+SECRET_KEY=tu_clave_secreta_aqui
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```
 
-### Python
-
+### Ejecutar la API
 ```bash
-pip install martita-ia-sdk
-```
+# Instalar dependencias
+pip install -r requirements.txt
 
-```python
-from martita_ia import MartitaAPI
-
-api = MartitaAPI(
-    base_url="https://api.martita-ia.com/v1",
-    token="tu_token_aqui"
-)
-
-# Crear conversación
-conversation = api.conversations.create(
-    title="Mi conversación"
-)
-
-# Enviar mensaje
-message = api.messages.send(
-    conversation_id=conversation.id,
-    content="Hola, ¿cómo estás?"
-)
+# Ejecutar en desarrollo
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ## Testing
 
 ### Testing con Swagger UI
 
-1. Ve a `http://localhost:3000/api/docs`
+1. Ve a `http://localhost:8000/docs`
 2. Haz clic en "Authorize" para configurar tu token
 3. Prueba los endpoints directamente desde la interfaz
 
@@ -340,12 +305,12 @@ message = api.messages.send(
 
 ```bash
 # Test de salud de la API
-curl -X GET http://localhost:3000/api/v1/health
+curl -X GET http://localhost:8000/
 
 # Test de autenticación
-curl -X POST http://localhost:3000/api/v1/auth/login \
+curl -X POST http://localhost:8000/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "test@example.com", "password": "password"}'
+  -d '{"email": "omigc4@gmail.com", "password": "password"}'
 ```
 
 ### Testing con Postman
@@ -354,18 +319,6 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 2. Configura variables de entorno
 3. Ejecuta las pruebas automáticamente
 
-## Monitoreo y Logs
-
-### Endpoints de Monitoreo
-- `GET /health` - Estado del servicio
-- `GET /metrics` - Métricas del sistema
-- `GET /logs` - Logs recientes (solo admin)
-
-### Métricas Disponibles
-- Requests por minuto
-- Tiempo de respuesta promedio
-- Tasa de errores
-- Uso de memoria y CPU
 
 ## Próximos Pasos
 
@@ -378,6 +331,7 @@ Después de familiarizarte con la introducción:
 
 ## Recursos Adicionales
 
+- [Documentación de FastAPI](https://fastapi.tiangolo.com/)
 - [Documentación de Swagger](https://swagger.io/docs/)
 - [Especificación OpenAPI 3.0](https://spec.openapis.org/oas/v3.0.3)
 - [Mejores prácticas de APIs REST](https://restfulapi.net/) 
