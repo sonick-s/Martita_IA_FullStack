@@ -3,21 +3,21 @@
 This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
 
 ## Guion a Implementar
-- [ ] Paginas Tutorial
+- [ ] Paginas Tutorial 
 - [ ] Blog (Creadores)
 - [ ] Footer (Creadores)
 
 ## Martita IA
-- [*] Presentacion
+- [*] Presentacion (Video de presentacion)
 - [*] Problemas que resuelve
 - [*] Componentes Tecnicos (Tecnologias sobre las que fueron Desarrolladas)
 - [*] Arquitectura Del Sistema
 - [*] Funcionalidades Principales
 
 ## Installation y Despliegue
-- [*] Instalacion Manual 
-- [*] Instalacion Con docker
-- [*] Despliegue Con Docker
+- [*] Instalacion Manual  (Video)
+- [*] Instalacion Con docker (Video)
+- [*] Despliegue Con Docker (Video)
 
 ## Base de Datos
 - [*] Introduccion
@@ -39,11 +39,11 @@ This website is built using [Docusaurus](https://docusaurus.io/), a modern stati
 - [*] Material de Apoyo
 
 ## Flowise
-- [ ] Introduccion
-- [ ] Configuracion
-- [ ] Credenciales
-- [ ] Flujos
-- [ ] Material de Apoyo
+- [*] Introduccion (Imagen)
+- [ ] Configuracion (Describir como cargar el archivo de flujo de ejemplo en flowise)
+- [ ] Credenciales (Describir las carga de credenciales de ejemplo)
+- [ ] Flujos (Dejar mas tipos de ejemplos y flujos)
+- [ ] Material de Apoyo (dejar documentacion oficial )
 
 ## Docusaurus
 - [ ] Documentacion
@@ -57,7 +57,7 @@ yarn
 ## Local Development
 
 ```bash
-yarn start
+npx docusaurus start
 ```
 
 This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.

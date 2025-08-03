@@ -15,3 +15,5 @@ docker-compose -f docker-compose.yml up --build # para producción
 ```
 TAREAS
 - [ ] Dejar fijo una version de flujo del flowise que funcione con el archivo json
+- [ ] Calibrar ambientes para desarrollo, produccion , test, con docusaurus y flowise
+- [ ] Terminar tesis con normas apa y anexos , incluir docusaurus en marco teorico 

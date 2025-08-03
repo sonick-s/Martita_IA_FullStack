@@ -5,9 +5,9 @@ services:
     ports:
       - "3306:3306"
     env_file:
-      - ./mysql/.env
+      - .env
     volumes:
-      - /c/MARTITA_IA/datos_docker/mysql:/var/lib/mysql
+      - "${MYSQL_DATA}:/var/lib/mysql"
       - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -u $${MYSQL_USER} -p$${MYSQL_PASSWORD}"]
@@ -18,28 +18,29 @@ services:
   backend:
     build:
       context: ./MARTITA_IA_API
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: Martita_IA_Backend
     ports:
       - "8000:8000"
     volumes:
       - ./MARTITA_IA_API:/app
     env_file:
-      - ./MARTITA_IA_API/.env
+      - .env
     depends_on:
       - mysql
 
   flowise:
     container_name: Martita_IA_Flowise
-    image: flowiseai/flowise
+    build:
+      context: ./Flowise
+      dockerfile: Dockerfile
     ports:
       - "${PORT}:${PORT}"
     env_file:
       - .env
     volumes:
-      - /c/MARTITA_IA/datos_docker/flowise:/root/.flowise
-      # 👇 LÍNEA AÑADIDA: Conecta una carpeta local para los embeddings
-      - /c/MARTITA_IA/datos_docker/embeddings:/app/data
+      - "${FLOWISE_DATA}:/root/.flowise"
+      - "${EMBEDDINGS_DATA}:/app/data"
     restart: unless-stopped
     depends_on:
       - backend
