@@ -13,7 +13,6 @@ This website is built using [Docusaurus](https://docusaurus.io/), a modern stati
 - [*] Componentes Tecnicos (Tecnologias sobre las que fueron Desarrolladas)
 - [*] Arquitectura Del Sistema
 - [*] Funcionalidades Principales
-- [ ] Material de Apoyo
 
 ## Installation y Despliegue
 - [*] Instalacion Manual 
@@ -31,13 +30,13 @@ This website is built using [Docusaurus](https://docusaurus.io/), a modern stati
 - [*] Seguridad
 
 ## Frontend
-- [ ] Introduccion (Bonito)
-- [ ] Arquitectura
-- [ ] Componentes
-- [ ] Rutas
-- [ ] Servicios
-- [ ] Funcionalidades
-- [ ] Material de Apoyo
+- [*] Introduccion (Colocar imagen correspondiente en descripcion)
+- [*] Arquitectura
+- [*] Componentes
+- [*] Rutas
+- [*] Servicios
+- [*] Funcionalidades
+- [*] Material de Apoyo
 
 ## Flowise
 - [ ] Introduccion

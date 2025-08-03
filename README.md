@@ -1,5 +1,10 @@
 # Martita IA
 
+## Documentacion con Docusaurus
+La documentacion tecnica (Manual Tecnico y de Usuario) solo se levantara cuando usen el contenedor de desarrollo, mientras que el (Manual de Usuario) se levantara solo en el contenedor de test y produccion.
+
+
+
 ## Levantar el proyecto en diferentes ambiente
 
 ```bash
