@@ -39,7 +39,6 @@ services:
     env_file:
       - .env
     volumes:
-      - "${FLOWISE_DATA}:/root/.flowise"
       - "${EMBEDDINGS_DATA}:/app/data"
     restart: unless-stopped
     depends_on:
