@@ -71,7 +71,7 @@
             placeholder="Contexto (opcional)">
           <button class="remove-button" @click="removeItem(index, 'formulario')">-</button>
         </div>
-        <button class="add-button" @click="addFormulario">+ Agregar Formulario</button>
+        <button class="add-button" @click="addItem('formulario')">+ Agregar Formulario</button>
       </section>
     </div>
   </div>
@@ -332,5 +332,9 @@ textarea {
 .error-container {
   text-align: center;
   padding: 4rem;
+}
+.form-section textarea {
+  min-height: 150px; /* Aumenta la altura mínima (puedes ajustarlo a 120px, 200px, etc.) */
+  resize: vertical; /* Opcional: Permite al usuario cambiar el tamaño verticalmente */
 }
 </style>

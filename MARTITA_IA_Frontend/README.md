@@ -49,3 +49,7 @@ Usuarios
 - [X] solo debe mostrar la informacion dle usuario Administrador, ya que la aplicaicon esta daptada solo para administrador por ahora 
 
 - [X] Conectar las apis de flowise a la aplicacion mediante un boton de "Actualizar memoria"
+- [X] Arreglar el campo fomulario de editar tramite.
+- [ ] Conectar el boton para la actualizacion de la base de datos vectorial.
+- [ ] El desgraciado login/registrarse.
+- [X] La vista de la tabla.
