@@ -1,13 +1,26 @@
 
 import Chatbot from "https://cdn.jsdelivr.net/npm/flowise-embed/dist/web.js";
-import apiClient from '@/boot/axios'; 
+import apiClient from '@/boot/axios';
 
 /**
  * Inicializa el chatbot de Flowise con configuraciones personalizadas.
  */
 export const initChatbot = () => {
+  // Validar que las variables de entorno estén disponibles
+  const chatflowId = import.meta.env.VITE_FLOWISE_CHATFLOW_ID;
+  const apiHost = import.meta.env.VITE_FLOWISE_API_HOST;
 
-  Chatbot.init({
+  if (!chatflowId || !apiHost) {
+    console.error('Error: Variables de entorno de Flowise no configuradas');
+    console.error('VITE_FLOWISE_CHATFLOW_ID:', chatflowId);
+    console.error('VITE_FLOWISE_API_HOST:', apiHost);
+    return false;
+  }
+
+  console.log('Inicializando chatbot con:', { chatflowId, apiHost });
+
+  try {
+    Chatbot.init({
     // --- Configuración Esencial ---
     // Leemos estos valores desde tus variables de entorno (.env)
     chatflowid: import.meta.env.VITE_FLOWISE_CHATFLOW_ID,
@@ -86,6 +99,13 @@ export const initChatbot = () => {
       },
     }
   });
+
+  console.log('Chatbot inicializado exitosamente');
+  return true;
+  } catch (error) {
+    console.error('Error al inicializar el chatbot:', error);
+    return false;
+  }
 };
 
 /**

@@ -29,8 +29,17 @@ const removeNotification = (id) => {
 provide('addNotification', addNotification);
 
 // 👇 3. LLAMA A LA FUNCIÓN DEL CHATBOT CUANDO LA APP SE CARGA
-onMounted(() => {
-  initChatbot();
+onMounted(async () => {
+  // Esperar un poco para asegurar que las variables de entorno estén cargadas
+  setTimeout(() => {
+    const success = initChatbot();
+    if (!success) {
+      console.warn('El chatbot no se pudo inicializar. Verifica las variables de entorno.');
+      addNotification('Error al cargar el chatbot. Verifica la configuración.', 'error');
+    } else {
+      console.log('Chatbot cargado exitosamente');
+    }
+  }, 1000);
 });
 </script>
 

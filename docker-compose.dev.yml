@@ -35,10 +35,11 @@ services:
       context: ./Flowise
       dockerfile: Dockerfile
     ports:
-      - "${PORT}:${PORT}"
+    - "3000:3000"
     env_file:
       - .env
     volumes:
+      - "${FLOWISE_DATA}:/root/.flowise"
       - "${EMBEDDINGS_DATA}:/app/data"
     restart: unless-stopped
     depends_on:
@@ -51,6 +52,8 @@ services:
     container_name: Martita_IA_Frontend
     ports:
       - "5173:5173" 
+    env_file:
+      - .env
     volumes:
       - ./MARTITA_IA_Frontend:/app      
       - /app/node_modules                  

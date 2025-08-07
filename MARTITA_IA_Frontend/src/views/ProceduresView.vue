@@ -6,6 +6,9 @@
         <button class="action-btn memory-btn" @click="handleUpdateMemory" :disabled="flowiseStore.isLoading">
           {{ flowiseStore.isLoading ? 'Actualizando...' : '🧠 Actualizar Memoria' }}
         </button>
+        <button class="action-btn debug-btn" @click="handleDebug" style="background-color: #6c757d; color: white;">
+          🔍 Debug
+        </button>
         <button class="action-btn" @click="openCreateProcedureModal">+ Crear Trámite</button>
         <button class="action-btn" @click="openCreateDirectionModal">+ Crear Dirección</button>
       </div>
@@ -114,7 +117,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, nextTick } from 'vue';
+import { ref, onMounted, computed, nextTick, inject } from 'vue';
 import { useProceduresStore } from '@/stores/procedures';
 import { useDirectionsStore } from '@/stores/directions';
 import { useFlowiseStore } from '@/stores/flowise';
@@ -128,6 +131,9 @@ import DescriptionModal from '@/components/DescriptionModal.vue';
 const proceduresStore = useProceduresStore();
 const directionsStore = useDirectionsStore();
 const flowiseStore = useFlowiseStore();
+
+// --- Inyección de dependencias ---
+const addNotification = inject('addNotification');
 
 // --- Estados ---
 const itemToDelete = ref({ id: null, type: null, name: '' });
@@ -153,7 +159,45 @@ const confirmModalTitle = computed(() => `Confirmar Desactivación`);
 const confirmModalMessage = computed(() => `¿Estás seguro de que quieres desactivar "${itemToDelete.value.name}"?`);
 
 // --- Funciones ---
-const handleUpdateMemory = async () => { /* ... */ };
+const handleUpdateMemory = async () => {
+  try {
+    // Primero probar la conectividad
+    const isConnected = await flowiseStore.testFlowiseConnection();
+    if (!isConnected) {
+      console.error('No se puede conectar con Flowise. Verifica la configuración.');
+      addNotification?.('No se puede conectar con Flowise. Verifica la configuración.', 'error');
+      return;
+    }
+
+    await flowiseStore.updateMemory();
+    // Mostrar notificación de éxito
+    console.log('Memoria actualizada exitosamente');
+    addNotification?.('Memoria actualizada exitosamente', 'success');
+  } catch (error) {
+    console.error('Error al actualizar memoria:', error);
+    addNotification?.(`Error al actualizar memoria: ${error.message}`, 'error');
+  }
+};
+
+const handleDebug = () => {
+  flowiseStore.debugEnvironment();
+  console.log('=== DEBUG COMPLETO ===');
+  console.log('Variables de entorno disponibles:', import.meta.env);
+  console.log('VITE_FLOWISE_API_HOST:', import.meta.env.VITE_FLOWISE_API_HOST);
+  console.log('VITE_FLOWISE_CHATFLOW_ID:', import.meta.env.VITE_FLOWISE_CHATFLOW_ID);
+  console.log('VITE_FLOWISE_API_KEY:', import.meta.env.VITE_FLOWISE_API_KEY);
+  console.log('VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
+  console.log('======================');
+
+  // Mostrar notificación con la información
+  const envInfo = `
+    API Host: ${import.meta.env.VITE_FLOWISE_API_HOST || 'No configurado'}
+    Chatflow ID: ${import.meta.env.VITE_FLOWISE_CHATFLOW_ID || 'No configurado'}
+    API Key: ${import.meta.env.VITE_FLOWISE_API_KEY ? 'Configurado' : 'No configurado'}
+    API Base URL: ${import.meta.env.VITE_API_BASE_URL || 'No configurado'}
+  `;
+  addNotification?.(`Debug info: ${envInfo}`, 'info');
+};
 
 const openDescriptionModal = async (procedure) => {
   isFetchingDetails.value = true;

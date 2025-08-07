@@ -4,7 +4,7 @@ FROM flowiseai/flowise:3.0.4
 
 # Copiar el chatflow predefinido a la carpeta de chatflows de Flowise dentro del contenedor.
 # Esto asegura que el chatflow esté disponible automáticamente al iniciar Flowise.
-COPY ./.flowise /root/.flowise
+# vCOPY ./.flowise /root/.flowise
 
 # La imagen base de Flowise ya se encarga de configurar el directorio de trabajo,
 # exponer el puerto por defecto (3000) y definir el comando de inicio.

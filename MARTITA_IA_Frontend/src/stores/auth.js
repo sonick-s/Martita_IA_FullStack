@@ -5,6 +5,7 @@ import apiClient from '@/boot/axios';
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: sessionStorage.getItem('token') || null,
+    refreshToken: sessionStorage.getItem('refreshToken') || null,
     userId: sessionStorage.getItem('userId') || null,
     userEmail: null,
   }),
@@ -18,12 +19,14 @@ export const useAuthStore = defineStore('auth', {
         const response = await apiClient.post('/login', loginData);
 
         const token = response.data.access_token;
+        const refreshToken = response.data.refresh_token;
         const userId = response.data.user_id;
 
-
         this.token = token;
+        this.refreshToken = refreshToken;
         this.userId = userId;
         sessionStorage.setItem('token', token);
+        sessionStorage.setItem('refreshToken', refreshToken);
         sessionStorage.setItem('userId', userId);
 
         await this.fetchUser();
@@ -49,10 +52,22 @@ export const useAuthStore = defineStore('auth', {
 
     logout() {
       this.token = null;
+      this.refreshToken = null;
       this.userEmail = null;
       this.userId = null;
       sessionStorage.removeItem('token');
+      sessionStorage.removeItem('refreshToken');
       sessionStorage.removeItem('userId');
+    },
+
+    setToken(token) {
+      this.token = token;
+      sessionStorage.setItem('token', token);
+    },
+
+    setRefreshToken(refreshToken) {
+      this.refreshToken = refreshToken;
+      sessionStorage.setItem('refreshToken', refreshToken);
     },
 
     async register(name, email, password) {
