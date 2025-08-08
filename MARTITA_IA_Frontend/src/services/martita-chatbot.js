@@ -68,13 +68,13 @@ REGLAS ESPECÍFICAS CONFIGURADAS:`;
  */
 function detectEmotion(responseText) {
   const text = responseText.toLowerCase();
-  
+
   for (const [emotion, keywords] of Object.entries(emotionKeywords)) {
     if (keywords.some(keyword => text.includes(keyword))) {
       return emotion;
     }
   }
-  
+
   // Emoción por defecto
   return 'feliz';
 }
@@ -94,19 +94,19 @@ function getEmotionImage(emotion) {
 function initializeSpeechSynthesis() {
   if ('speechSynthesis' in window) {
     speechSynthesis = window.speechSynthesis;
-    
+
     // Cargar voces disponibles
     const loadVoices = () => {
-      availableVoices = speechSynthesis.getVoices().filter(voice => 
+      availableVoices = speechSynthesis.getVoices().filter(voice =>
         voice.lang.startsWith('es') || voice.lang.startsWith('en')
       );
-      
+
       // Seleccionar voz por defecto (preferir español)
-      selectedVoice = availableVoices.find(voice => voice.lang.startsWith('es')) || 
-                     availableVoices.find(voice => voice.lang.startsWith('en')) || 
+      selectedVoice = availableVoices.find(voice => voice.lang.startsWith('es')) ||
+                     availableVoices.find(voice => voice.lang.startsWith('en')) ||
                      availableVoices[0];
     };
-    
+
     loadVoices();
     speechSynthesis.onvoiceschanged = loadVoices;
   }
@@ -116,17 +116,31 @@ function initializeSpeechSynthesis() {
  * Reproduce el texto usando síntesis de voz
  */
 function speakText(text) {
-  if (!isSpeechEnabled || !speechSynthesis || !selectedVoice) return;
-  
+  console.log('🔊 speakText() llamada con texto:', text);
+  console.log('🔊 Estado de voz - isSpeechEnabled:', isSpeechEnabled);
+  console.log('🔊 speechSynthesis disponible:', !!speechSynthesis);
+  console.log('🔊 selectedVoice:', selectedVoice?.name || 'No seleccionada');
+
+  if (!isSpeechEnabled || !speechSynthesis || !selectedVoice) {
+    console.log('❌ speakText() cancelada - Condiciones no cumplidas');
+    return;
+  }
+
   // Cancelar cualquier reproducción anterior
   speechSynthesis.cancel();
-  
+  console.log('🔊 Reproduciendo texto con voz:', selectedVoice.name);
+
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.voice = selectedVoice;
   utterance.rate = 0.9;
   utterance.pitch = 1.1;
   utterance.volume = 0.8;
-  
+
+  // Eventos para monitorear el estado de la síntesis
+  utterance.onstart = () => console.log('✅ Síntesis de voz iniciada');
+  utterance.onend = () => console.log('✅ Síntesis de voz completada');
+  utterance.onerror = (error) => console.error('❌ Error en síntesis de voz:', error);
+
   speechSynthesis.speak(utterance);
 }
 
@@ -173,28 +187,49 @@ export const initChatbot = async () => {
       },
       observersConfig: {
         observeMessages: (messages) => {
+          console.log('📨 observeMessages ejecutado - Total mensajes:', messages.length);
+          console.log('📨 Mensajes completos:', messages);
+          
           const lastMessage = messages[messages.length - 1];
-          if (lastMessage && lastMessage.role === "assistant") {
+          console.log('📨 Último mensaje:', lastMessage);
+          
+          // Detectar mensajes del bot usando la estructura de Flowise: type: 'apiMessage'
+          if (lastMessage && lastMessage.type === "apiMessage" && lastMessage.message && lastMessage.message.trim() !== '') {
+            console.log('✅ Detectado mensaje del bot:', lastMessage.message);
+            
             const userAnswer = messages[messages.length - 2];
-            if (userAnswer && userAnswer.role === 'user') {
+            console.log('📨 Mensaje del usuario anterior:', userAnswer);
+            
+            // Detectar mensajes del usuario usando la estructura de Flowise: type: 'userMessage'
+            if (userAnswer && userAnswer.type === 'userMessage' && userAnswer.message) {
+              console.log('✅ Par pregunta-respuesta válido detectado');
+              
               const interaction = {
-                question: userAnswer.content,
-                answer: lastMessage.content,
+                question: userAnswer.message,
+                answer: lastMessage.message,
               };
-              
+
               // Detectar emoción y actualizar avatar
-              currentEmotion = detectEmotion(lastMessage.content);
+              currentEmotion = detectEmotion(lastMessage.message);
               updateBotAvatar(currentEmotion);
-              
+
               // Reproducir respuesta con voz
+              console.log('🔊 Intentando reproducir voz - isSpeechEnabled:', isSpeechEnabled);
               if (isSpeechEnabled) {
-                speakText(lastMessage.content);
+                console.log('🔊 Llamando a speakText con:', lastMessage.message);
+                speakText(lastMessage.message);
+              } else {
+                console.log('❌ Voz deshabilitada, no se reproduce');
               }
-              
+
               conversationHistory.push({ role: 'user', content: interaction.question });
               conversationHistory.push({ role: 'assistant', content: interaction.answer });
               enviarInteraccionAlBackend(interaction);
+            } else {
+              console.log('❌ No se encontró mensaje de usuario válido anterior');
             }
+          } else {
+            console.log('❌ El último mensaje no es del bot o está vacío');
           }
         },
       },
@@ -263,7 +298,7 @@ export const getConversationHistory = () => {
  */
 function updateBotAvatar(emotion) {
   const avatarSrc = getEmotionImage(emotion);
-  
+
   // Intentar actualizar el avatar en el DOM del chatbot
   setTimeout(() => {
     const botAvatars = document.querySelectorAll('.flowise-bot-message img, .bot-avatar');
