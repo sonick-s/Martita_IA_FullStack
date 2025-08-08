@@ -146,7 +146,35 @@ const refreshData = () => {
 
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
-  return new Date(dateString).toLocaleString('es-ES');
+  
+  try {
+    const date = new Date(dateString);
+    // Verificar si la fecha es válida
+    if (isNaN(date.getTime())) {
+      console.warn('Fecha inválida recibida:', dateString);
+      return 'Fecha inválida';
+    }
+    
+    // Formatear la fecha en español con fecha y hora
+    return date.toLocaleString('es-ES', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+  } catch (error) {
+    console.error('Error al formatear fecha:', error, dateString);
+    return 'Error en fecha';
+  }
+};
+
+// Función para actualizar el historial desde el chatbot
+const updateHistoryFromChatbot = async () => {
+  console.log("🔄 Actualizando historial desde chatbot...");
+  await historyStore.fetchHistory();
 };
 
 // Carga el historial inicial y limpia datos previos
@@ -154,11 +182,28 @@ onMounted(async () => {
   // Limpiar datos previos antes de cargar nuevos
   historyStore.clearHistory();
   await historyStore.fetchHistory();
+  
+  // Registrar función global para que el chatbot pueda actualizar el historial
+  if (typeof window !== 'undefined') {
+    window.updateHistoryStore = updateHistoryFromChatbot;
+    console.log("📊 Función de actualización de historial registrada globalmente");
+  }
+  
+  // Iniciar actualización automática cada 15 segundos
+  historyStore.startAutoRefresh(15000);
+  console.log("🔄 Actualización automática del historial activada");
+});
+
+// Limpiar intervalos al desmontar el componente
+import { onUnmounted } from 'vue';
+onUnmounted(() => {
+  historyStore.stopAutoRefresh();
+  console.log("🛑 Componente desmontado - actualización automática detenida");
 });
 
 // Observa si el número total de interacciones cambia para refrescar la lista
 watch(() => historyStore.totalInteractions, () => {
-  refreshData();
+  console.log("📈 Cambio detectado en total de interacciones:", historyStore.totalInteractions);
 });
 </script>
 

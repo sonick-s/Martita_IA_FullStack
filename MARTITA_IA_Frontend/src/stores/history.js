@@ -77,14 +77,29 @@ export const useHistoryStore = defineStore('history', {
      */
     async deleteAllInteractions() {
         try {
-            // Eliminar todas las interacciones una por una
-            const deletePromises = this.interactions.map(interaction => 
-                apiClient.delete(`/interacciones/${interaction.id_interaccion}`)
-            );
-            await Promise.all(deletePromises);
+            console.log(`🗑️ Iniciando eliminación de ${this.interactions.length} interacciones...`);
+            
+            // Verificar si hay un endpoint para eliminar todas las interacciones
+            try {
+                // Intentar eliminar todas de una vez si el backend lo soporta
+                await apiClient.delete('/interacciones/all');
+                console.log('✅ Todas las interacciones eliminadas con endpoint bulk');
+            } catch (bulkError) {
+                console.log('⚠️ Endpoint bulk no disponible, eliminando una por una...');
+                // Fallback: eliminar todas las interacciones una por una
+                const deletePromises = this.interactions.map(interaction => 
+                    apiClient.delete(`/interacciones/${interaction.id_interaccion}`)
+                );
+                await Promise.all(deletePromises);
+                console.log('✅ Todas las interacciones eliminadas individualmente');
+            }
+            
+            // Limpiar el estado local
             this.interactions = [];
+            console.log('🧹 Estado local limpiado');
+            
         } catch(err) {
-            console.error('Error deleting all interactions:', err);
+            console.error('❌ Error deleting all interactions:', err);
             throw err;
         }
     },
@@ -96,6 +111,35 @@ export const useHistoryStore = defineStore('history', {
     clearHistory() {
         this.interactions = [];
         this.error = null;
+    },
+
+    /**
+     * Inicia actualización automática del historial cada cierto tiempo
+     * @param {number} intervalMs - Intervalo en milisegundos (por defecto 30 segundos)
+     */
+    startAutoRefresh(intervalMs = 30000) {
+        if (this.autoRefreshInterval) {
+            clearInterval(this.autoRefreshInterval);
+        }
+        
+        console.log(`🔄 Iniciando actualización automática del historial cada ${intervalMs/1000} segundos`);
+        this.autoRefreshInterval = setInterval(() => {
+            if (!this.isLoading) {
+                console.log('🔄 Actualización automática del historial...');
+                this.fetchHistory();
+            }
+        }, intervalMs);
+    },
+
+    /**
+     * Detiene la actualización automática del historial
+     */
+    stopAutoRefresh() {
+        if (this.autoRefreshInterval) {
+            clearInterval(this.autoRefreshInterval);
+            this.autoRefreshInterval = null;
+            console.log('⏹️ Actualización automática del historial detenida');
+        }
     },
 
     /**

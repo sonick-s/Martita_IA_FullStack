@@ -11,6 +11,8 @@ let speechSynthesis = null;
 let availableVoices = [];
 let selectedVoice = null;
 let isSpeechEnabled = true;
+let lastProcessedMessageId = null; // Para evitar reproducir mensajes antiguos
+let isFirstLoad = true; // Para detectar la primera carga del chat
 
 // Mapeo de emociones basado en el contenido de la respuesta
 const emotionMapping = {
@@ -174,14 +176,24 @@ function speakText(text) {
  */
 async function enviarInteraccionAlBackend(interaction) {
   try {
+    // Crear fecha y hora actual en formato ISO
+    const currentDateTime = new Date().toISOString();
+    
     const response = await apiClient.post('/interacciones/', {
       pregunta: interaction.question,
       respuesta: interaction.answer,
-      respuesta_util: null
+      respuesta_util: null,
+      fecha: currentDateTime
     });
-    console.log("Historial de interacción guardado:", response.data);
+    console.log("✅ Historial de interacción guardado:", response.data);
+    
+    // Notificar al store para actualizar el historial automáticamente
+    if (typeof window !== 'undefined' && window.updateHistoryStore) {
+      console.log("📊 Actualizando store del historial...");
+      window.updateHistoryStore();
+    }
   } catch (error) {
-    console.error("Error al guardar el historial de interacción:", error);
+    console.error("❌ Error al guardar el historial de interacción:", error);
   }
 }
 
@@ -222,36 +234,62 @@ export const initChatbot = async () => {
           if (lastMessage && lastMessage.type === "apiMessage" && lastMessage.message && lastMessage.message.trim() !== '') {
             console.log('✅ Detectado mensaje del bot:', lastMessage.message);
             
-            const userAnswer = messages[messages.length - 2];
-            console.log('📨 Mensaje del usuario anterior:', userAnswer);
+            // Verificar si es un mensaje nuevo usando messageId o timestamp
+            const messageId = lastMessage.messageId || lastMessage.dateTime || lastMessage.message;
+            const isNewMessage = lastProcessedMessageId !== messageId;
             
-            // Detectar mensajes del usuario usando la estructura de Flowise: type: 'userMessage'
-            if (userAnswer && userAnswer.type === 'userMessage' && userAnswer.message) {
-              console.log('✅ Par pregunta-respuesta válido detectado');
+            console.log('🔍 Verificando si es mensaje nuevo:');
+            console.log('   - ID del mensaje actual:', messageId);
+            console.log('   - Último ID procesado:', lastProcessedMessageId);
+            console.log('   - Es primera carga:', isFirstLoad);
+            console.log('   - Es mensaje nuevo:', isNewMessage);
+            
+            // Solo procesar si es un mensaje nuevo Y no es la primera carga
+            if (isNewMessage && !isFirstLoad) {
+              const userAnswer = messages[messages.length - 2];
+              console.log('📨 Mensaje del usuario anterior:', userAnswer);
               
-              const interaction = {
-                question: userAnswer.message,
-                answer: lastMessage.message,
-              };
+              // Detectar mensajes del usuario usando la estructura de Flowise: type: 'userMessage'
+              if (userAnswer && userAnswer.type === 'userMessage' && userAnswer.message) {
+                console.log('✅ Par pregunta-respuesta válido detectado - PROCESANDO MENSAJE NUEVO');
+                
+                const interaction = {
+                  question: userAnswer.message,
+                  answer: lastMessage.message,
+                };
 
-              // Detectar emoción y actualizar avatar
-              currentEmotion = detectEmotion(lastMessage.message);
-              updateBotAvatar(currentEmotion);
+                // Detectar emoción y actualizar avatar
+                currentEmotion = detectEmotion(lastMessage.message);
+                updateBotAvatar(currentEmotion);
 
-              // Reproducir respuesta con voz
-              console.log('🔊 Intentando reproducir voz - isSpeechEnabled:', isSpeechEnabled);
-              if (isSpeechEnabled) {
-                console.log('🔊 Llamando a speakText con:', lastMessage.message);
-                speakText(lastMessage.message);
+                // Reproducir respuesta con voz SOLO para mensajes nuevos
+                console.log('🔊 Intentando reproducir voz - isSpeechEnabled:', isSpeechEnabled);
+                if (isSpeechEnabled) {
+                  console.log('🔊 Llamando a speakText con:', lastMessage.message);
+                  speakText(lastMessage.message);
+                } else {
+                  console.log('❌ Voz deshabilitada, no se reproduce');
+                }
+
+                conversationHistory.push({ role: 'user', content: interaction.question });
+                conversationHistory.push({ role: 'assistant', content: interaction.answer });
+                enviarInteraccionAlBackend(interaction);
               } else {
-                console.log('❌ Voz deshabilitada, no se reproduce');
+                console.log('❌ No se encontró mensaje de usuario válido anterior');
               }
-
-              conversationHistory.push({ role: 'user', content: interaction.question });
-              conversationHistory.push({ role: 'assistant', content: interaction.answer });
-              enviarInteraccionAlBackend(interaction);
+            } else if (isFirstLoad) {
+              console.log('🚫 Primera carga del chat - NO se reproduce voz para evitar repetir mensajes antiguos');
             } else {
-              console.log('❌ No se encontró mensaje de usuario válido anterior');
+              console.log('🚫 Mensaje ya procesado anteriormente - NO se reproduce voz');
+            }
+            
+            // Actualizar el ID del último mensaje procesado
+            lastProcessedMessageId = messageId;
+            
+            // Marcar que ya no es la primera carga después del primer mensaje
+            if (isFirstLoad) {
+              isFirstLoad = false;
+              console.log('✅ Primera carga completada');
             }
           } else {
             console.log('❌ El último mensaje no es del bot o está vacío');
