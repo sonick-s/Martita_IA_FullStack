@@ -7,11 +7,9 @@
 </template>
 
 <script setup>
-// 👇 1. AÑADE 'onMounted' A LA IMPORTACIÓN DE VUE
 import { ref, provide, onMounted } from 'vue';
 import { RouterView } from 'vue-router';
 import NotificationContainer from '@/components/NotificationContainer.vue';
-// 👇 2. IMPORTA TU NUEVA FUNCIÓN DEL CHATBOT
 import { initChatbot } from '@/services/martita-chatbot.js';
 
 const notifications = ref([]);
@@ -28,18 +26,15 @@ const removeNotification = (id) => {
 
 provide('addNotification', addNotification);
 
-// 👇 3. LLAMA A LA FUNCIÓN DEL CHATBOT CUANDO LA APP SE CARGA
+// 👇 Llama a la función del chatbot de forma más limpia y robusta
 onMounted(async () => {
-  // Esperar un poco para asegurar que las variables de entorno estén cargadas
-  setTimeout(() => {
-    const success = initChatbot();
-    if (!success) {
-      console.warn('El chatbot no se pudo inicializar. Verifica las variables de entorno.');
-      addNotification('Error al cargar el chatbot. Verifica la configuración.', 'error');
-    } else {
-      console.log('Chatbot cargado exitosamente');
-    }
-  }, 1000);
+  // 'await' espera a que initChatbot termine y nos da el resultado (true o false)
+  const success = await initChatbot();
+
+  // Si la inicialización falló (retornó false), muestra una notificación de error
+  if (!success) {
+    addNotification('Error al cargar el chatbot. Verifica la configuración.', 'error');
+  }
 });
 </script>
 

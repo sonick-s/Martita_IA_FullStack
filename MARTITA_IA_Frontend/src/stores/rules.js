@@ -7,6 +7,18 @@ export const useRulesStore = defineStore('rules', {
     isLoading: false,
     error: null,
   }),
+
+  // 👇 AÑADIMOS GETTERS PARA FILTRAR LAS REGLAS
+  getters: {
+    /**
+     * Devuelve solo las reglas que están activas (estado = 1).
+     * @param {object} state - El estado actual de la store.
+     */
+    activeRules: (state) => {
+      return state.rules.filter(rule => rule.estado === 1);
+    }
+  },
+
   actions: {
     async fetchRules() {
       this.isLoading = true;
@@ -23,7 +35,8 @@ export const useRulesStore = defineStore('rules', {
     },
     async createRule(newRule) {
       try {
-        await apiClient.post('/prompts-bot/', newRule);
+        // Aseguramos que las nuevas reglas se creen como activas por defecto
+        await apiClient.post('/prompts-bot/', { ...newRule, estado: 1 });
         await this.fetchRules();
       } catch (err) {
         console.error('Error creating rule:', err);
@@ -40,12 +53,33 @@ export const useRulesStore = defineStore('rules', {
         throw err;
       }
     },
-    async deleteRule(ruleId) {
+
+    // 👇 CAMBIO: Reemplazamos deleteRule por deactivateRule
+    /**
+     * Desactiva una regla cambiando su estado a 0.
+     * @param {number} ruleId - El ID de la regla a desactivar.
+     */
+    async deactivateRule(ruleId) {
       try {
-        await apiClient.delete(`/prompts-bot/${ruleId}`);
+        await apiClient.put(`/prompts-bot/${ruleId}`, { estado: 0 });
         await this.fetchRules();
       } catch (err) {
-        console.error('Error deleting rule:', err);
+        console.error('Error deactivating rule:', err);
+        throw err;
+      }
+    },
+
+    // 👇 NUEVA ACCIÓN: Para poder reactivar una regla
+    /**
+     * Activa una regla cambiando su estado a 1.
+     * @param {number} ruleId - El ID de la regla a activar.
+     */
+    async activateRule(ruleId) {
+      try {
+        await apiClient.put(`/prompts-bot/${ruleId}`, { estado: 1 });
+        await this.fetchRules();
+      } catch (err) {
+        console.error('Error activating rule:', err);
         throw err;
       }
     },

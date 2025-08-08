@@ -6,9 +6,6 @@
         <button class="action-btn memory-btn" @click="handleUpdateMemory" :disabled="flowiseStore.isLoading">
           {{ flowiseStore.isLoading ? 'Actualizando...' : '🧠 Actualizar Memoria' }}
         </button>
-        <button class="action-btn debug-btn" @click="handleDebug" style="background-color: #6c757d; color: white;">
-          🔍 Debug
-        </button>
         <button class="action-btn" @click="openCreateProcedureModal">+ Crear Trámite</button>
         <button class="action-btn" @click="openCreateDirectionModal">+ Crear Dirección</button>
       </div>
@@ -127,15 +124,13 @@ import ProcedureWizardModal from '@/components/ProcedureWizardModal.vue';
 import ProceduresListModal from '@/components/ProceduresListModal.vue';
 import DescriptionModal from '@/components/DescriptionModal.vue';
 
-// --- Stores ---
+// --- Inicialización de Stores y Servicios ---
 const proceduresStore = useProceduresStore();
 const directionsStore = useDirectionsStore();
 const flowiseStore = useFlowiseStore();
-
-// --- Inyección de dependencias ---
 const addNotification = inject('addNotification');
 
-// --- Estados ---
+// --- Referencias y Estados ---
 const itemToDelete = ref({ id: null, type: null, name: '' });
 const proceduresTable = ref(null);
 const isWizardModalOpen = ref(false);
@@ -146,68 +141,38 @@ const selectedDirection = ref(null);
 const isProceduresModalOpen = ref(false);
 const isDescriptionModalOpen = ref(false);
 const selectedProcedureForModal = ref(null);
-const filteredDirectionId = ref(null);
-const isFetchingDetails = ref(false); // Estado de carga para el modal
+const filteredDirectionId = ref(null); // <-- VARIABLE AÑADIDA
+const isFetchingDetails = ref(false);
 
-// --- Computeds ---
+// --- Propiedades Computadas ---
 const allDirections = computed(() => directionsStore.directions);
 const displayedProcedures = computed(() => {
-  if (!filteredDirectionId.value) return proceduresStore.procedures;
-  return proceduresStore.procedures.filter(p => p.id_direcciones === filteredDirectionId.value);
+  // Ahora la lógica de filtro es segura porque la variable existe
+  if (!filteredDirectionId.value) {
+    return proceduresStore.procedures;
+  }
+  return proceduresStore.procedures.filter(
+    proc => proc.id_direcciones === filteredDirectionId.value
+  );
 });
 const confirmModalTitle = computed(() => `Confirmar Desactivación`);
 const confirmModalMessage = computed(() => `¿Estás seguro de que quieres desactivar "${itemToDelete.value.name}"?`);
 
-// --- Funciones ---
+// --- Manejadores de Eventos y Modales ---
 const handleUpdateMemory = async () => {
+  addNotification('Iniciando la actualización de la memoria...', 'info');
   try {
-    // Primero probar la conectividad
-    const isConnected = await flowiseStore.testFlowiseConnection();
-    if (!isConnected) {
-      console.error('No se puede conectar con Flowise. Verifica la configuración.');
-      addNotification?.('No se puede conectar con Flowise. Verifica la configuración.', 'error');
-      return;
-    }
-
     await flowiseStore.updateMemory();
-    // Mostrar notificación de éxito
-    console.log('Memoria actualizada exitosamente');
-    addNotification?.('Memoria actualizada exitosamente', 'success');
+    addNotification('¡Memoria actualizada correctamente!', 'success');
   } catch (error) {
-    console.error('Error al actualizar memoria:', error);
-    addNotification?.(`Error al actualizar memoria: ${error.message}`, 'error');
+    addNotification('Ocurrió un error al actualizar la memoria.', 'error');
   }
 };
-
-const handleDebug = () => {
-  flowiseStore.debugEnvironment();
-  console.log('=== DEBUG COMPLETO ===');
-  console.log('Variables de entorno disponibles:', import.meta.env);
-  console.log('VITE_FLOWISE_API_HOST:', import.meta.env.VITE_FLOWISE_API_HOST);
-  console.log('VITE_FLOWISE_CHATFLOW_ID:', import.meta.env.VITE_FLOWISE_CHATFLOW_ID);
-  console.log('VITE_FLOWISE_API_KEY:', import.meta.env.VITE_FLOWISE_API_KEY);
-  console.log('VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
-  console.log('======================');
-
-  // Mostrar notificación con la información
-  const envInfo = `
-    API Host: ${import.meta.env.VITE_FLOWISE_API_HOST || 'No configurado'}
-    Chatflow ID: ${import.meta.env.VITE_FLOWISE_CHATFLOW_ID || 'No configurado'}
-    API Key: ${import.meta.env.VITE_FLOWISE_API_KEY ? 'Configurado' : 'No configurado'}
-    API Base URL: ${import.meta.env.VITE_API_BASE_URL || 'No configurado'}
-  `;
-  addNotification?.(`Debug info: ${envInfo}`, 'info');
+const openDeleteConfirm = (id, type, name) => {
+  itemToDelete.value = { id, type, name };
+  isConfirmModalOpen.value = true;
 };
-
-const openDescriptionModal = async (procedure) => {
-  isFetchingDetails.value = true;
-  await proceduresStore.fetchProcedureById(procedure.id_tramite);
-  selectedProcedureForModal.value = proceduresStore.activeProcedure;
-  isDescriptionModalOpen.value = true;
-  isFetchingDetails.value = false;
-};
-const closeDescriptionModal = () => { isDescriptionModalOpen.value = false; };
-
+const closeConfirmModal = () => { isConfirmModalOpen.value = false; };
 const confirmDelete = async () => {
   if (!itemToDelete.value.id) return;
   try {
@@ -224,21 +189,41 @@ const confirmDelete = async () => {
     closeConfirmModal();
   }
 };
-
-// ... (resto de funciones para abrir/cerrar modales sin cambios)
-const openDeleteConfirm = (id, type, name) => {
-  itemToDelete.value = { id, type, name };
-  isConfirmModalOpen.value = true;
+const openDescriptionModal = async (procedure) => {
+  await proceduresStore.fetchProcedureById(procedure.id_tramite);
+  selectedProcedureForModal.value = proceduresStore.activeProcedure;
+  isDescriptionModalOpen.value = true;
 };
-const closeConfirmModal = () => { isConfirmModalOpen.value = false; };
+const closeDescriptionModal = () => { isDescriptionModalOpen.value = false; };
 const openCreateProcedureModal = () => { isWizardModalOpen.value = true; };
 const closeCreateProcedureModal = () => { isWizardModalOpen.value = false; };
-const openCreateDirectionModal = () => { directionBeingEdited.value = null; isDirectionModalOpen.value = true; };
-const openEditDirectionModal = (direction) => { directionBeingEdited.value = direction; isDirectionModalOpen.value = true; };
+const openCreateDirectionModal = () => {
+  directionBeingEdited.value = null;
+  isDirectionModalOpen.value = true;
+};
+const openEditDirectionModal = (direction) => {
+  directionBeingEdited.value = direction;
+  isDirectionModalOpen.value = true;
+};
 const closeDirectionModal = () => { isDirectionModalOpen.value = false; };
-const openProceduresModal = (direction) => { selectedDirection.value = direction; isProceduresModalOpen.value = true; };
-const handleDirectionFormSubmit = async (data) => { /* ... */ };
-
+const openProceduresModal = (direction) => {
+  selectedDirection.value = direction;
+  // Actualizamos la variable de filtro al abrir el modal
+  filteredDirectionId.value = direction.id_direcciones;
+  isProceduresModalOpen.value = true;
+};
+const handleDirectionFormSubmit = async (data) => {
+  try {
+    if (directionBeingEdited.value) {
+      await directionsStore.updateDirection(data);
+    } else {
+      await directionsStore.createDirection(data);
+    }
+    closeDirectionModal();
+  } catch (error) {
+    console.error('Error al guardar la dirección:', error);
+  }
+};
 
 // --- Ciclo de Vida ---
 onMounted(() => {
