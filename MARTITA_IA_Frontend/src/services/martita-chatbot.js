@@ -101,10 +101,35 @@ function initializeSpeechSynthesis() {
         voice.lang.startsWith('es') || voice.lang.startsWith('en')
       );
 
-      // Seleccionar voz por defecto (preferir español)
-      selectedVoice = availableVoices.find(voice => voice.lang.startsWith('es')) ||
-                     availableVoices.find(voice => voice.lang.startsWith('en')) ||
-                     availableVoices[0];
+      // Buscar voces femeninas sensuales (priorizar nombres específicos)
+      const femaleVoiceNames = [
+        'Helena', 'Sabina', 'Mónica', 'Paloma', 'Carmen', 'Isabel', // Español
+        'Zira', 'Eva', 'Lucia', 'Paulina', 'Esperanza', 'Marisol',
+        'Samantha', 'Victoria', 'Allison', 'Ava', 'Susan', 'Joanna', // Inglés
+        'Salli', 'Kimberly', 'Kendra', 'Ivy', 'Emma', 'Amy'
+      ];
+
+      // Buscar voz femenina sensual por nombre
+      selectedVoice = availableVoices.find(voice => 
+        femaleVoiceNames.some(name => voice.name.includes(name)) && 
+        voice.lang.startsWith('es')
+      ) || 
+      availableVoices.find(voice => 
+        femaleVoiceNames.some(name => voice.name.includes(name)) && 
+        voice.lang.startsWith('en')
+      ) ||
+      // Fallback: cualquier voz femenina (generalmente contienen "Female" o terminan en "a")
+      availableVoices.find(voice => 
+        (voice.name.toLowerCase().includes('female') || 
+         voice.name.toLowerCase().includes('woman') ||
+         voice.name.endsWith('a')) && 
+        voice.lang.startsWith('es')
+      ) ||
+      availableVoices.find(voice => voice.lang.startsWith('es')) ||
+      availableVoices.find(voice => voice.lang.startsWith('en')) ||
+      availableVoices[0];
+
+      console.log('🎤 Voz seleccionada:', selectedVoice?.name, '- Idioma:', selectedVoice?.lang);
     };
 
     loadVoices();
@@ -132,9 +157,9 @@ function speakText(text) {
 
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.voice = selectedVoice;
-  utterance.rate = 0.9;
-  utterance.pitch = 1.1;
-  utterance.volume = 0.8;
+  utterance.rate = 0.75;  // Más lenta para sonar más sensual
+  utterance.pitch = 0.8;  // Tono más grave y seductor
+  utterance.volume = 0.9; // Volumen ligeramente más alto
 
   // Eventos para monitorear el estado de la síntesis
   utterance.onstart = () => console.log('✅ Síntesis de voz iniciada');
