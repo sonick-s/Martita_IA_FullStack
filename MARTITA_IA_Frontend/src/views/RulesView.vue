@@ -64,14 +64,13 @@ import { ref, onMounted } from 'vue';
 import { useRulesStore } from '@/stores/rules';
 import RuleFormModal from '@/components/RuleFormModal.vue';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
+import { updateBotRules } from '@/services/martita-chatbot.js';
 
 const rulesStore = useRulesStore();
 
-// --- Estados para el Modal de Formulario (Crear/Editar) ---
+// --- Estados para Modales ---
 const isFormModalOpen = ref(false);
 const ruleBeingEdited = ref(null);
-
-// --- Estados para el Modal de Confirmación (Eliminar) ---
 const isConfirmModalOpen = ref(false);
 const ruleIdToDelete = ref(null);
 
@@ -80,17 +79,14 @@ const openCreateModal = () => {
   ruleBeingEdited.value = null;
   isFormModalOpen.value = true;
 };
-
 const openEditModal = (rule) => {
   ruleBeingEdited.value = rule;
   isFormModalOpen.value = true;
 };
-
 const closeFormModal = () => {
   isFormModalOpen.value = false;
   ruleBeingEdited.value = null;
 };
-
 const handleFormSubmit = async (ruleData) => {
   try {
     if (ruleBeingEdited.value) {
@@ -98,6 +94,7 @@ const handleFormSubmit = async (ruleData) => {
     } else {
       await rulesStore.createRule(ruleData);
     }
+    await updateBotRules();
     closeFormModal();
   } catch (error) {
     console.error("Fallo al guardar la regla desde la vista:", error);
@@ -110,26 +107,25 @@ const openDeleteConfirm = (ruleId) => {
   ruleIdToDelete.value = ruleId;
   isConfirmModalOpen.value = true;
 };
-
 const closeConfirmModal = () => {
   isConfirmModalOpen.value = false;
   ruleIdToDelete.value = null;
 };
-
 const confirmDelete = async () => {
   if (!ruleIdToDelete.value) return;
   try {
-    await rulesStore.deleteRule(ruleIdToDelete.value);
+    // 👇 CAMBIO CLAVE: Llamamos a la nueva acción para desactivar
+    await rulesStore.deactivateRule(ruleIdToDelete.value);
+    await updateBotRules();
   } catch (error) {
-    alert('Error al eliminar la regla.');
-    console.error("Fallo al intentar eliminar la regla:", error);
+    alert('Error al desactivar la regla.');
+    console.error("Fallo al intentar desactivar la regla:", error);
   } finally {
     closeConfirmModal();
   }
 };
 
 // --- Hook de Ciclo de Vida ---
-// Se ejecuta cuando el componente se carga
 onMounted(() => {
   rulesStore.fetchRules();
 });
