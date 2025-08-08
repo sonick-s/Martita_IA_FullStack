@@ -5,11 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import Usuarios
-from app.schemas.usuarios import UsuarioCreate, UsuarioUpdate, UsuarioRead
+from app.schemas.usuarios import UsuarioCreate, UsuarioUpdate, UsuarioRead, UsuarioCreateWithValidation
 from app.controllers import (
     get_usuarios,
     get_usuario_id,
     create_usuario,
+    create_usuario_with_validation,
     update_usuario,
     delete_usuario,
 )
@@ -40,10 +41,29 @@ async def read_usuario(id_usuario: int, db: AsyncSession = Depends(get_db), curr
 
 
 @router.post("/", response_model=UsuarioRead, status_code=status.HTTP_201_CREATED)
-async def create_nuevo_usuario(usuario: UsuarioCreate, db: AsyncSession = Depends(get_db)):
+async def create_nuevo_usuario(usuario: UsuarioCreateWithValidation, db: AsyncSession = Depends(get_db)):
     """
-    Crea un nuevo usuario (registro).
-    Este endpoint es público y no requiere autenticación.
+    Crea un nuevo usuario (registro) con validación completa.
+    Requiere credenciales de administrador y valida según variables de entorno.
+    """
+    return await create_usuario_with_validation(usuario, db)
+
+
+@router.post("/register", response_model=UsuarioRead, status_code=status.HTTP_201_CREATED)
+async def register_usuario_with_validation(usuario: UsuarioCreateWithValidation, db: AsyncSession = Depends(get_db)):
+    """
+    Crea un nuevo usuario con validación completa basada en variables de entorno.
+    Requiere credenciales de administrador y valida dominios, límites, etc.
+    (Endpoint duplicado para compatibilidad)
+    """
+    return await create_usuario_with_validation(usuario, db)
+
+
+@router.post("/simple", response_model=UsuarioRead, status_code=status.HTTP_201_CREATED)
+async def create_usuario_simple(usuario: UsuarioCreate, db: AsyncSession = Depends(get_db)):
+    """
+    Crea un nuevo usuario sin validaciones de entorno (solo para desarrollo/casos especiales).
+    Este endpoint bypasa todas las validaciones de variables de entorno.
     """
     return await create_usuario(usuario, db)
 

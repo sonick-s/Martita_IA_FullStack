@@ -70,9 +70,18 @@ export const useAuthStore = defineStore('auth', {
       sessionStorage.setItem('refreshToken', refreshToken);
     },
 
-    async register(name, email, password) {
+    async register(name, email, password, adminUsername = 'admin', adminPassword = 'admin123') {
       try {
-        await apiClient.post('/usuarios/', { nombre: name, email, password });
+        const registerData = {
+          nombre: name,
+          email: email,
+          password: password,
+          admin_username: adminUsername,
+          admin_password: adminPassword,
+          fecha_registro: new Date().toISOString()
+        };
+        
+        await apiClient.post('/usuarios/', registerData);
         await this.login(email, password);
       } catch (error) {
         console.error('Error en el registro:', error);

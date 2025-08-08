@@ -25,6 +25,25 @@
           <input type="password" id="confirmPassword" v-model="confirmPassword" required />
         </div>
 
+        <!-- Campos de administrador (pueden ser ocultos o visibles según configuración) -->
+        <div class="admin-fields" v-if="showAdminFields">
+          <div class="form-group">
+            <label for="adminUsername">Usuario Administrador</label>
+            <input type="text" id="adminUsername" v-model="adminUsername" required />
+          </div>
+          <div class="form-group">
+            <label for="adminPassword">Contraseña Administrador</label>
+            <input type="password" id="adminPassword" v-model="adminPassword" required />
+          </div>
+        </div>
+
+        <!-- Toggle para mostrar/ocultar campos de admin -->
+        <div class="admin-toggle">
+          <button type="button" @click="showAdminFields = !showAdminFields" class="btn-toggle">
+            {{ showAdminFields ? 'Ocultar' : 'Mostrar' }} Credenciales de Administrador
+          </button>
+        </div>
+
         <div class="form-actions">
           <router-link to="/login" class="btn btn-secondary">
             Iniciar Sesión
@@ -54,6 +73,9 @@ const name = ref('');
 const email = ref('');
 const password = ref('');
 const confirmPassword = ref('');
+const adminUsername = ref('admin');
+const adminPassword = ref('admin123');
+const showAdminFields = ref(false);
 const errorMessage = ref('');
 const isLoading = ref(false);
 
@@ -72,10 +94,21 @@ const handleRegister = async () => {
 
   isLoading.value = true;
   try {
-    await authStore.register(name.value, email.value, password.value);
+    await authStore.register(
+      name.value, 
+      email.value, 
+      password.value, 
+      adminUsername.value, 
+      adminPassword.value
+    );
     router.push('/dashboard');
   } catch (error) {
-    errorMessage.value = 'No se pudo crear la cuenta. El email podría estar en uso.';
+    // Mostrar mensajes de error más específicos según el tipo de error
+    if (error.response && error.response.data && error.response.data.detail) {
+      errorMessage.value = error.response.data.detail;
+    } else {
+      errorMessage.value = 'No se pudo crear la cuenta. Verifica los datos ingresados.';
+    }
     console.error("Error capturado en el componente de registro:", error);
   } finally {
     isLoading.value = false;
@@ -206,5 +239,47 @@ input:focus {
 
 .error-message p {
   margin: 0;
+}
+
+/* Estilos para campos de administrador */
+.admin-fields {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border-left: 4px solid #42b983;
+}
+
+.admin-toggle {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.btn-toggle {
+  background: none;
+  border: 1px solid #42b983;
+  color: #42b983;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.btn-toggle:hover {
+  background-color: #42b983;
+  color: white;
+}
+
+/* Responsive para campos de admin */
+@media (max-width: 768px) {
+  .admin-fields {
+    padding: 0.8rem;
+  }
+  
+  .btn-toggle {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
 }
 </style>
