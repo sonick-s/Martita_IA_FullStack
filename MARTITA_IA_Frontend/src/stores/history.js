@@ -72,8 +72,35 @@ export const useHistoryStore = defineStore('history', {
     },
 
     /**
-     * (Opcional) Elimina TODO el historial de la base de datos.
+     * Elimina TODO el historial de la base de datos.
      * Útil para funciones de administrador.
+     */
+    async deleteAllInteractions() {
+        try {
+            // Eliminar todas las interacciones una por una
+            const deletePromises = this.interactions.map(interaction => 
+                apiClient.delete(`/interacciones/${interaction.id_interaccion}`)
+            );
+            await Promise.all(deletePromises);
+            this.interactions = [];
+        } catch(err) {
+            console.error('Error deleting all interactions:', err);
+            throw err;
+        }
+    },
+
+    /**
+     * Limpia el historial local sin hacer llamadas al backend.
+     * Útil para limpiar datos previos antes de cargar nuevos.
+     */
+    clearHistory() {
+        this.interactions = [];
+        this.error = null;
+    },
+
+    /**
+     * (Opcional) Elimina TODO el historial de la base de datos usando un endpoint específico.
+     * Útil para funciones de administrador si el backend tiene un endpoint dedicado.
      */
     async clearAllHistory() {
         try {

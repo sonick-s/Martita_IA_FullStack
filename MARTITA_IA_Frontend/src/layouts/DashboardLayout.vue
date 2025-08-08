@@ -57,6 +57,7 @@ const handleLogout = () => {
   width: 100vw;
   height: 100vh;
   background-color: #f8f9fa;
+  position: relative;
 }
 
 /* --- Barra Lateral --- */
@@ -68,6 +69,7 @@ const handleLogout = () => {
   padding: 1.5rem;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
   flex-shrink: 0;
+  transition: transform 0.3s ease;
 }
 
 /* Título centrado */
@@ -168,5 +170,176 @@ const handleLogout = () => {
   flex-grow: 1;
   padding: 2.5rem;
   overflow-y: auto;
+}
+
+/* === RESPONSIVE DESIGN === */
+
+/* Tablets (768px - 1024px) */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 220px;
+    padding: 1rem;
+  }
+  
+  .sidebar-header h2 {
+    font-size: 1.6rem;
+  }
+  
+  .logo {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .main-content {
+    padding: 2rem;
+  }
+}
+
+/* Mobile Landscape (768px and below) */
+@media (max-width: 768px) {
+  .dashboard-layout {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  }
+  
+  .sidebar-header {
+    margin-bottom: 0;
+  }
+  
+  .sidebar-header h2 {
+    font-size: 1.4rem;
+  }
+  
+  .logo-container {
+    margin-bottom: 0;
+    margin-right: 1rem;
+  }
+  
+  .logo {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .sidebar-nav {
+    flex-direction: row;
+    gap: 0.5rem;
+    flex-grow: 0;
+  }
+  
+  .sidebar-nav a {
+    padding: 0.5rem;
+    border-radius: 6px;
+    min-width: 44px;
+    justify-content: center;
+  }
+  
+  .sidebar-nav a span {
+    display: none;
+  }
+  
+  .sidebar-nav a svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .sidebar-footer {
+    margin-top: 0;
+    margin-left: auto;
+  }
+  
+  .logout-button {
+    width: auto;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .main-content {
+    padding: 1.5rem;
+    height: calc(100vh - 80px);
+  }
+}
+
+/* Mobile Portrait (480px and below) */
+@media (max-width: 480px) {
+  .sidebar {
+    padding: 0.8rem;
+  }
+  
+  .sidebar-header h2 {
+    font-size: 1.2rem;
+  }
+  
+  .logo {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .sidebar-nav {
+    gap: 0.3rem;
+  }
+  
+  .sidebar-nav a {
+    padding: 0.4rem;
+    min-width: 40px;
+  }
+  
+  .sidebar-nav a svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .logout-button {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+  
+  .main-content {
+    padding: 1rem;
+    height: calc(100vh - 70px);
+  }
+}
+
+/* Extra Small Mobile (320px and below) */
+@media (max-width: 320px) {
+  .sidebar {
+    padding: 0.5rem;
+  }
+  
+  .sidebar-header h2 {
+    font-size: 1rem;
+  }
+  
+  .logo {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .sidebar-nav a {
+    padding: 0.3rem;
+    min-width: 36px;
+  }
+  
+  .sidebar-nav a svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .logout-button {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.7rem;
+  }
+  
+  .main-content {
+    padding: 0.8rem;
+  }
 }
 </style>

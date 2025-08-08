@@ -6,6 +6,29 @@ let loadedBotRules = [];
 let conversationHistory = [];
 let sessionId = null;
 let isInitialized = false;
+let currentEmotion = 'feliz'; // Estado emocional actual del bot
+let speechSynthesis = null;
+let availableVoices = [];
+let selectedVoice = null;
+let isSpeechEnabled = true;
+
+// Mapeo de emociones basado en el contenido de la respuesta
+const emotionMapping = {
+  'feliz': ['feliz.png', 'feli.png'],
+  'saludo': ['saludo.png'],
+  'confundido': ['confundido.png'],
+  'enojado': ['enojado.png'],
+  'aturdido': ['aturdido.png']
+};
+
+// Palabras clave para detectar emociones
+const emotionKeywords = {
+  'feliz': ['excelente', 'perfecto', 'genial', 'fantástico', 'maravilloso', 'bien', 'correcto', 'sí', 'claro', 'por supuesto'],
+  'confundido': ['no entiendo', 'confuso', 'no comprendo', 'no sé', 'incierto', 'dudoso'],
+  'enojado': ['error', 'problema', 'incorrecto', 'mal', 'no funciona', 'falla', 'imposible'],
+  'aturdido': ['complicado', 'difícil', 'complejo', 'muchas opciones', 'varios pasos'],
+  'saludo': ['hola', 'buenos días', 'buenas tardes', 'buenas noches', 'saludos', 'bienvenido']
+};
 
 /**
  * Carga las reglas del bot desde el backend.
@@ -41,6 +64,73 @@ REGLAS ESPECÍFICAS CONFIGURADAS:`;
 }
 
 /**
+ * Detecta la emoción basada en el contenido de la respuesta del bot
+ */
+function detectEmotion(responseText) {
+  const text = responseText.toLowerCase();
+  
+  for (const [emotion, keywords] of Object.entries(emotionKeywords)) {
+    if (keywords.some(keyword => text.includes(keyword))) {
+      return emotion;
+    }
+  }
+  
+  // Emoción por defecto
+  return 'feliz';
+}
+
+/**
+ * Obtiene la imagen correspondiente a una emoción
+ */
+function getEmotionImage(emotion) {
+  const images = emotionMapping[emotion] || emotionMapping['feliz'];
+  const randomImage = images[Math.floor(Math.random() * images.length)];
+  return `/src/assets/${randomImage}`;
+}
+
+/**
+ * Inicializa el sistema de síntesis de voz
+ */
+function initializeSpeechSynthesis() {
+  if ('speechSynthesis' in window) {
+    speechSynthesis = window.speechSynthesis;
+    
+    // Cargar voces disponibles
+    const loadVoices = () => {
+      availableVoices = speechSynthesis.getVoices().filter(voice => 
+        voice.lang.startsWith('es') || voice.lang.startsWith('en')
+      );
+      
+      // Seleccionar voz por defecto (preferir español)
+      selectedVoice = availableVoices.find(voice => voice.lang.startsWith('es')) || 
+                     availableVoices.find(voice => voice.lang.startsWith('en')) || 
+                     availableVoices[0];
+    };
+    
+    loadVoices();
+    speechSynthesis.onvoiceschanged = loadVoices;
+  }
+}
+
+/**
+ * Reproduce el texto usando síntesis de voz
+ */
+function speakText(text) {
+  if (!isSpeechEnabled || !speechSynthesis || !selectedVoice) return;
+  
+  // Cancelar cualquier reproducción anterior
+  speechSynthesis.cancel();
+  
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.voice = selectedVoice;
+  utterance.rate = 0.9;
+  utterance.pitch = 1.1;
+  utterance.volume = 0.8;
+  
+  speechSynthesis.speak(utterance);
+}
+
+/**
  * Envía la interacción capturada al backend para ser guardada.
  */
 async function enviarInteraccionAlBackend(interaction) {
@@ -72,6 +162,9 @@ export const initChatbot = async () => {
     await loadBotRules();
     const systemPrompt = buildSystemPrompt(loadedBotRules);
 
+    // Inicializar síntesis de voz
+    initializeSpeechSynthesis();
+
     Chatbot.init({
       chatflowid: chatflowId,
       apiHost: apiHost,
@@ -88,6 +181,16 @@ export const initChatbot = async () => {
                 question: userAnswer.content,
                 answer: lastMessage.content,
               };
+              
+              // Detectar emoción y actualizar avatar
+              currentEmotion = detectEmotion(lastMessage.content);
+              updateBotAvatar(currentEmotion);
+              
+              // Reproducir respuesta con voz
+              if (isSpeechEnabled) {
+                speakText(lastMessage.content);
+              }
+              
               conversationHistory.push({ role: 'user', content: interaction.question });
               conversationHistory.push({ role: 'assistant', content: interaction.answer });
               enviarInteraccionAlBackend(interaction);
@@ -102,7 +205,7 @@ export const initChatbot = async () => {
           bottom: 20,
           size: '60px',
           iconColor: 'white',
-          customIconSrc: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyQzIgMTcuNTIgNi40OCAyMiAxMiAyMkMxNy41MiAyMiAyMiAxNy41MiAyMiAxMkMyMiA2LjQ4IDE3LjUyIDIgMTIgMloiIGZpbGw9IiM0MmI5ODMiLz4KPHBhdGggZD0iTTEyIDZDNi40OCA2IDIgMTAuNDggMiAxNkMyIDIxLjUyIDYuNDggMjYgMTIgMjZDMjEuNTIgMjYgMjYgMjEuNTIgMjYgMTZDMjYgMTAuNDggMjEuNTIgNiAxMiA2WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTEwIDExQzEwIDEwLjQ0NyAxMC40NDcgMTAgMTEgMTBIMTNDMTMuNTUzIDEwIDE0IDEwLjQ0NyAxNCAxMUMxNCAxMS41NTMgMTMuNTUzIDEyIDEzIDEySDExQzEwLjQ0NyAxMiAxMCAxMS41NTMgMTAgMTFaIiBmaWxsPSIjNDJiOTgzIi8+CjxwYXRoIGQ9Ik04IDE0QzggMTMuNDQ3IDguNDQ3IDEzIDkgMTNIMTVDMTUuNTUzIDEzIDE2IDEzLjQ0NyAxNiAxNEMxNiAxNC41NTMgMTUuNTUzIDE1IDE1IDE1SDlDOC40NDcgMTUgOCAxNC41NTMgOCAxNFoiIGZpbGw9IiM0MmI5ODMiLz4KPHBhdGggZD0iTTEyIDE4QzEwLjkgMTggMTAgMTcuMSAxMCAxNkMxMCAxNC45IDEwLjkgMTQgMTIgMTRDMTMuMSAxNCAxNCAxNC45IDE0IDE2QzE0IDE3LjEgMTMuMSAxOCAxMiAxOFoiIGZpbGw9IiM0MmI5ODMiLz4KPC9zdmc+',
+          customIconSrc: '/src/assets/saludo.png', // Imagen de saludo cuando está cerrado
         },
         chatWindow: {
           welcomeMessage: '¡Hola! Soy Martita AI. Estoy aquí para ayudarte con los trámites del GAD de Cayambe.',
@@ -115,7 +218,7 @@ export const initChatbot = async () => {
             backgroundColor: '#f1f3f5',
             textColor: '#2c3e50',
             showAvatar: true,
-            avatarSrc: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyQzIgMTcuNTIgNi40OCAyMiAxMiAyMkMxNy41MiAyMiAyMiAxNy41MiAyMiAxMkMyMiA2LjQ4IDE3LjUyIDIgMTIgMloiIGZpbGw9IiM0MmI5ODMiLz4KPHBhdGggZD0iTTEyIDZDNi40OCA2IDIgMTAuNDggMiAxNkMyIDIxLjUyIDYuNDggMjYgMTIgMjZDMjEuNTIgMjYgMjYgMjEuNTIgMjYgMTZDMjYgMTAuNDggMjEuNTIgNiAxMiA2WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTEwIDExQzEwIDEwLjQ0NyAxMC40NDcgMTAgMTEgMTBIMTNDMTMuNTUzIDEwIDE0IDEwLjQ0NyAxNCAxMUMxNCAxMS41NTMgMTMuNTUzIDEyIDEzIDEySDExQzEwLjQ0NyAxMiAxMCAxMS41NTMgMTAgMTFaIiBmaWxsPSIjNDJiOTgzIi8+CjxwYXRoIGQ9Ik04IDE0QzggMTMuNDQ3IDguNDQ3IDEzIDkgMTNIMTVDMTUuNTUzIDEzIDE2IDEzLjQ0NyAxNiAxNEMxNiAxNC41NTMgMTUuNTUzIDE1IDE1IDE1SDlDOC40NDcgMTUgOCAxNC41NTMgOCAxNFoiIGZpbGw9IiM0MmI5ODMiLz4KPHBhdGggZD0iTTEyIDE4QzEwLjkgMTggMTAgMTcuMSAxMCAxNkMxMCAxNC45IDEwLjkgMTQgMTIgMTRDMTMuMSAxNCAxNCAxNC45IDE0IDE2QzE0IDE3LjEgMTMuMSAxOCAxMiAxOFoiIGZpbGw9IiM0MmI5ODMiLz4KPC9zdmc+',
+            avatarSrc: '/src/assets/feliz.png', // Avatar dinámico del bot
           },
           userMessage: {
             backgroundColor: '#42b983',
@@ -155,12 +258,101 @@ export const getConversationHistory = () => {
   return [...conversationHistory];
 };
 
+/**
+ * Actualiza el avatar del bot basado en la emoción
+ */
+function updateBotAvatar(emotion) {
+  const avatarSrc = getEmotionImage(emotion);
+  
+  // Intentar actualizar el avatar en el DOM del chatbot
+  setTimeout(() => {
+    const botAvatars = document.querySelectorAll('.flowise-bot-message img, .bot-avatar');
+    botAvatars.forEach(avatar => {
+      if (avatar) {
+        avatar.src = avatarSrc;
+      }
+    });
+  }, 100);
+}
+
 export const clearConversationHistory = () => {
   conversationHistory = [];
   sessionId = null;
+  currentEmotion = 'feliz';
   console.log('Historial de conversación local limpiado.');
 };
 
 export const isChatbotInitialized = () => {
   return isInitialized;
+};
+
+// === FUNCIONES DE VOZ ===
+
+/**
+ * Obtiene las voces disponibles
+ */
+export const getAvailableVoices = () => {
+  return availableVoices;
+};
+
+/**
+ * Cambia la voz seleccionada
+ */
+export const setSelectedVoice = (voiceIndex) => {
+  if (availableVoices[voiceIndex]) {
+    selectedVoice = availableVoices[voiceIndex];
+    console.log('Voz cambiada a:', selectedVoice.name);
+  }
+};
+
+/**
+ * Habilita o deshabilita la síntesis de voz
+ */
+export const toggleSpeech = (enabled) => {
+  isSpeechEnabled = enabled;
+  if (!enabled) {
+    speechSynthesis?.cancel();
+  }
+  console.log('Síntesis de voz:', enabled ? 'habilitada' : 'deshabilitada');
+};
+
+/**
+ * Reproduce un texto específico (para pruebas)
+ */
+export const testSpeech = (text = 'Hola, soy Martita AI. ¿En qué puedo ayudarte?') => {
+  speakText(text);
+};
+
+/**
+ * Detiene la reproducción de voz actual
+ */
+export const stopSpeech = () => {
+  speechSynthesis?.cancel();
+};
+
+// === FUNCIONES DE EMOCIONES ===
+
+/**
+ * Obtiene la emoción actual del bot
+ */
+export const getCurrentEmotion = () => {
+  return currentEmotion;
+};
+
+/**
+ * Cambia manualmente la emoción del bot
+ */
+export const setEmotion = (emotion) => {
+  if (emotionMapping[emotion]) {
+    currentEmotion = emotion;
+    updateBotAvatar(emotion);
+    console.log('Emoción cambiada a:', emotion);
+  }
+};
+
+/**
+ * Obtiene todas las emociones disponibles
+ */
+export const getAvailableEmotions = () => {
+  return Object.keys(emotionMapping);
 };
