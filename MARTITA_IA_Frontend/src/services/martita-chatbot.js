@@ -99,76 +99,247 @@ function initializeSpeechSynthesis() {
 
     // Cargar voces disponibles
     const loadVoices = () => {
-      availableVoices = speechSynthesis.getVoices().filter(voice =>
-        voice.lang.startsWith('es') || voice.lang.startsWith('en')
-      );
+      try {
+        // Obtener todas las voces disponibles
+        const allVoices = speechSynthesis.getVoices();
+        console.log('🎤 Total de voces disponibles:', allVoices.length);
+        
+        // Filtrar voces en español e inglés
+        availableVoices = allVoices.filter(voice =>
+          voice.lang.startsWith('es') || voice.lang.startsWith('en')
+        );
+        
+        console.log('🎤 Voces filtradas (es/en):', availableVoices.length);
+        availableVoices.forEach(voice => {
+          console.log(`   - ${voice.name} (${voice.lang}) - Local: ${voice.localService}`);
+        });
 
-      // Buscar voces femeninas sensuales (priorizar nombres específicos)
-      const femaleVoiceNames = [
-        'Helena', 'Sabina', 'Mónica', 'Paloma', 'Carmen', 'Isabel', // Español
-        'Zira', 'Eva', 'Lucia', 'Paulina', 'Esperanza', 'Marisol',
-        'Samantha', 'Victoria', 'Allison', 'Ava', 'Susan', 'Joanna', // Inglés
-        'Salli', 'Kimberly', 'Kendra', 'Ivy', 'Emma', 'Amy'
-      ];
+        if (availableVoices.length === 0) {
+          console.warn('⚠️ No se encontraron voces en español o inglés');
+          return;
+        }
 
-      // Buscar voz femenina sensual por nombre
-      selectedVoice = availableVoices.find(voice => 
-        femaleVoiceNames.some(name => voice.name.includes(name)) && 
-        voice.lang.startsWith('es')
-      ) || 
-      availableVoices.find(voice => 
-        femaleVoiceNames.some(name => voice.name.includes(name)) && 
-        voice.lang.startsWith('en')
-      ) ||
-      // Fallback: cualquier voz femenina (generalmente contienen "Female" o terminan en "a")
-      availableVoices.find(voice => 
-        (voice.name.toLowerCase().includes('female') || 
-         voice.name.toLowerCase().includes('woman') ||
-         voice.name.endsWith('a')) && 
-        voice.lang.startsWith('es')
-      ) ||
-      availableVoices.find(voice => voice.lang.startsWith('es')) ||
-      availableVoices.find(voice => voice.lang.startsWith('en')) ||
-      availableVoices[0];
+        // Buscar voces femeninas (priorizar nombres específicos)
+        const femaleVoiceNames = [
+          'Helena', 'Sabina', 'Mónica', 'Paloma', 'Carmen', 'Isabel', // Español
+          'Zira', 'Eva', 'Lucia', 'Paulina', 'Esperanza', 'Marisol',
+          'Samantha', 'Victoria', 'Allison', 'Ava', 'Susan', 'Joanna', // Inglés
+          'Salli', 'Kimberly', 'Kendra', 'Ivy', 'Emma', 'Amy'
+        ];
 
-      console.log('🎤 Voz seleccionada:', selectedVoice?.name, '- Idioma:', selectedVoice?.lang);
+        // Estrategia de selección de voz con múltiples fallbacks
+        selectedVoice = 
+          // 1. Voz femenina específica en español
+          availableVoices.find(voice => 
+            femaleVoiceNames.some(name => voice.name.includes(name)) && 
+            voice.lang.startsWith('es')
+          ) || 
+          // 2. Cualquier voz femenina en español
+          availableVoices.find(voice => 
+            (voice.name.toLowerCase().includes('female') || 
+             voice.name.toLowerCase().includes('woman') ||
+             voice.name.toLowerCase().includes('mujer') ||
+             voice.name.endsWith('a')) && 
+            voice.lang.startsWith('es')
+          ) ||
+          // 3. Cualquier voz en español
+          availableVoices.find(voice => voice.lang.startsWith('es')) ||
+          // 4. Voz femenina específica en inglés
+          availableVoices.find(voice => 
+            femaleVoiceNames.some(name => voice.name.includes(name)) && 
+            voice.lang.startsWith('en')
+          ) ||
+          // 5. Cualquier voz femenina en inglés
+          availableVoices.find(voice => 
+            (voice.name.toLowerCase().includes('female') || 
+             voice.name.toLowerCase().includes('woman')) && 
+            voice.lang.startsWith('en')
+          ) ||
+          // 6. Cualquier voz en inglés
+          availableVoices.find(voice => voice.lang.startsWith('en')) ||
+          // 7. Fallback final: primera voz disponible
+          availableVoices[0];
+
+        if (selectedVoice) {
+          console.log('✅ Voz seleccionada:', selectedVoice.name, '- Idioma:', selectedVoice.lang, '- Local:', selectedVoice.localService);
+        } else {
+          console.error('❌ No se pudo seleccionar ninguna voz');
+        }
+      } catch (error) {
+        console.error('❌ Error al cargar voces:', error);
+      }
     };
 
+    // Cargar voces inmediatamente
     loadVoices();
+    
+    // También cargar cuando cambien las voces disponibles
     speechSynthesis.onvoiceschanged = loadVoices;
+    
+    // Timeout para asegurar que las voces se carguen
+    setTimeout(loadVoices, 100);
+  } else {
+    console.error('❌ SpeechSynthesis no está disponible en este navegador');
   }
 }
 
 /**
- * Reproduce el texto usando síntesis de voz
+ * Reproduce el texto usando síntesis de voz con manejo robusto de errores
  */
 function speakText(text) {
-  console.log('🔊 speakText() llamada con texto:', text);
+  console.log('🔊 speakText() llamada con texto:', text?.substring(0, 50) + '...');
   console.log('🔊 Estado de voz - isSpeechEnabled:', isSpeechEnabled);
   console.log('🔊 speechSynthesis disponible:', !!speechSynthesis);
   console.log('🔊 selectedVoice:', selectedVoice?.name || 'No seleccionada');
 
-  if (!isSpeechEnabled || !speechSynthesis || !selectedVoice) {
-    console.log('❌ speakText() cancelada - Condiciones no cumplidas');
+  // Validaciones previas
+  if (!isSpeechEnabled) {
+    console.log('❌ speakText() cancelada - Voz deshabilitada');
     return;
   }
 
-  // Cancelar cualquier reproducción anterior
-  speechSynthesis.cancel();
-  console.log('🔊 Reproduciendo texto con voz:', selectedVoice.name);
+  if (!speechSynthesis) {
+    console.log('❌ speakText() cancelada - SpeechSynthesis no disponible');
+    return;
+  }
 
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.voice = selectedVoice;
-  utterance.rate = 0.75;  // Más lenta para sonar más sensual
-  utterance.pitch = 0.8;  // Tono más grave y seductor
-  utterance.volume = 0.9; // Volumen ligeramente más alto
+  if (!text || text.trim() === '') {
+    console.log('❌ speakText() cancelada - Texto vacío');
+    return;
+  }
 
-  // Eventos para monitorear el estado de la síntesis
-  utterance.onstart = () => console.log('✅ Síntesis de voz iniciada');
-  utterance.onend = () => console.log('✅ Síntesis de voz completada');
-  utterance.onerror = (error) => console.error('❌ Error en síntesis de voz:', error);
+  // Si no hay voz seleccionada, intentar reinicializar
+  if (!selectedVoice) {
+    console.log('⚠️ No hay voz seleccionada, intentando reinicializar...');
+    initializeSpeechSynthesis();
+    
+    // Esperar un poco y verificar de nuevo
+    setTimeout(() => {
+      if (!selectedVoice) {
+        console.error('❌ No se pudo inicializar ninguna voz');
+        return;
+      }
+      speakText(text); // Reintentar
+    }, 200);
+    return;
+  }
 
-  speechSynthesis.speak(utterance);
+  try {
+    // Cancelar cualquier reproducción anterior
+    if (speechSynthesis.speaking || speechSynthesis.pending) {
+      console.log('🔄 Cancelando reproducción anterior...');
+      speechSynthesis.cancel();
+      
+      // Esperar un poco antes de continuar
+      setTimeout(() => {
+        performSpeech(text);
+      }, 100);
+    } else {
+      performSpeech(text);
+    }
+  } catch (error) {
+    console.error('❌ Error general en speakText:', error);
+  }
+}
+
+/**
+ * Función auxiliar para realizar la síntesis de voz
+ */
+function performSpeech(text) {
+  try {
+    console.log('🔊 Iniciando síntesis con voz:', selectedVoice.name);
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Configurar la voz y parámetros
+    utterance.voice = selectedVoice;
+    utterance.rate = 0.8;   // Velocidad moderada
+    utterance.pitch = 0.9;  // Tono natural
+    utterance.volume = 0.8; // Volumen moderado
+    utterance.lang = selectedVoice.lang || 'es-ES';
+
+    // Eventos para monitorear el estado
+    utterance.onstart = () => {
+      console.log('✅ Síntesis de voz iniciada exitosamente');
+    };
+    
+    utterance.onend = () => {
+      console.log('✅ Síntesis de voz completada exitosamente');
+    };
+    
+    utterance.onerror = (event) => {
+      console.error('❌ Error en síntesis de voz:', {
+        error: event.error,
+        name: event.name,
+        type: event.type
+      });
+      
+      // Intentar con fallback si hay error
+      if (event.error === 'interrupted' || event.error === 'network') {
+        console.log('🔄 Intentando con voz de fallback...');
+        tryFallbackVoice(text);
+      }
+    };
+    
+    utterance.onpause = () => {
+      console.log('⏸️ Síntesis de voz pausada');
+    };
+    
+    utterance.onresume = () => {
+      console.log('▶️ Síntesis de voz reanudada');
+    };
+
+    // Reproducir el texto
+    speechSynthesis.speak(utterance);
+    
+  } catch (error) {
+    console.error('❌ Error al crear utterance:', error);
+    tryFallbackVoice(text);
+  }
+}
+
+/**
+ * Intenta reproducir con una voz de fallback
+ */
+function tryFallbackVoice(text) {
+  try {
+    console.log('🔄 Buscando voz de fallback...');
+    
+    // Buscar una voz diferente como fallback
+    const fallbackVoice = availableVoices.find(voice => 
+      voice !== selectedVoice && voice.lang.startsWith('es')
+    ) || availableVoices.find(voice => 
+      voice !== selectedVoice && voice.lang.startsWith('en')
+    ) || availableVoices.find(voice => voice !== selectedVoice);
+    
+    if (fallbackVoice) {
+      console.log('✅ Usando voz de fallback:', fallbackVoice.name);
+      const originalVoice = selectedVoice;
+      selectedVoice = fallbackVoice;
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.voice = fallbackVoice;
+      utterance.rate = 0.8;
+      utterance.pitch = 0.9;
+      utterance.volume = 0.8;
+      
+      utterance.onend = () => {
+        console.log('✅ Fallback completado, restaurando voz original');
+        selectedVoice = originalVoice;
+      };
+      
+      utterance.onerror = (event) => {
+        console.error('❌ Error también en fallback:', event.error);
+        selectedVoice = originalVoice;
+      };
+      
+      speechSynthesis.speak(utterance);
+    } else {
+      console.error('❌ No hay voces de fallback disponibles');
+    }
+  } catch (error) {
+    console.error('❌ Error en fallback:', error);
+  }
 }
 
 /**
@@ -244,8 +415,16 @@ export const initChatbot = async () => {
             console.log('   - Es primera carga:', isFirstLoad);
             console.log('   - Es mensaje nuevo:', isNewMessage);
             
-            // Solo procesar si es un mensaje nuevo Y no es la primera carga
-            if (isNewMessage && !isFirstLoad) {
+            // Si es la primera carga, solo marcarla como completada sin procesar mensajes antiguos
+            if (isFirstLoad) {
+              console.log('🚫 Primera carga del chat - Marcando como completada sin reproducir mensajes antiguos');
+              isFirstLoad = false;
+              lastProcessedMessageId = messageId; // Marcar este mensaje como procesado
+              return; // Salir sin procesar mensajes antiguos
+            }
+            
+            // Solo procesar si es un mensaje nuevo (después de la primera carga)
+            if (isNewMessage) {
               const userAnswer = messages[messages.length - 2];
               console.log('📨 Mensaje del usuario anterior:', userAnswer);
               
@@ -262,7 +441,7 @@ export const initChatbot = async () => {
                 currentEmotion = detectEmotion(lastMessage.message);
                 updateBotAvatar(currentEmotion);
 
-                // Reproducir respuesta con voz SOLO para mensajes nuevos
+                // Reproducir respuesta con voz para mensajes nuevos
                 console.log('🔊 Intentando reproducir voz - isSpeechEnabled:', isSpeechEnabled);
                 if (isSpeechEnabled) {
                   console.log('🔊 Llamando a speakText con:', lastMessage.message);
@@ -274,22 +453,14 @@ export const initChatbot = async () => {
                 conversationHistory.push({ role: 'user', content: interaction.question });
                 conversationHistory.push({ role: 'assistant', content: interaction.answer });
                 enviarInteraccionAlBackend(interaction);
+                
+                // Actualizar el ID del último mensaje procesado
+                lastProcessedMessageId = messageId;
               } else {
                 console.log('❌ No se encontró mensaje de usuario válido anterior');
               }
-            } else if (isFirstLoad) {
-              console.log('🚫 Primera carga del chat - NO se reproduce voz para evitar repetir mensajes antiguos');
             } else {
               console.log('🚫 Mensaje ya procesado anteriormente - NO se reproduce voz');
-            }
-            
-            // Actualizar el ID del último mensaje procesado
-            lastProcessedMessageId = messageId;
-            
-            // Marcar que ya no es la primera carga después del primer mensaje
-            if (isFirstLoad) {
-              isFirstLoad = false;
-              console.log('✅ Primera carga completada');
             }
           } else {
             console.log('❌ El último mensaje no es del bot o está vacío');
@@ -418,8 +589,133 @@ export const toggleSpeech = (enabled) => {
  * Reproduce un texto específico (para pruebas)
  */
 export const testSpeech = (text = 'Hola, soy Martita AI. ¿En qué puedo ayudarte?') => {
+  console.log('🧪 Iniciando prueba de voz...');
+  
+  // Diagnóstico completo antes de la prueba
+  diagnoseSpeechIssues();
+  
+  // Intentar reproducir
   speakText(text);
 };
+
+/**
+ * Diagnostica problemas comunes con la síntesis de voz
+ */
+export const diagnoseSpeechIssues = () => {
+  console.log('🔍 === DIAGNÓSTICO DE SÍNTESIS DE VOZ ===');
+  
+  // 1. Verificar disponibilidad básica
+  console.log('1. SpeechSynthesis disponible:', 'speechSynthesis' in window);
+  
+  if (!('speechSynthesis' in window)) {
+    console.error('❌ SpeechSynthesis no está disponible en este navegador');
+    return;
+  }
+  
+  // 2. Estado del speechSynthesis
+  console.log('2. Estado speechSynthesis:', {
+    speaking: speechSynthesis.speaking,
+    pending: speechSynthesis.pending,
+    paused: speechSynthesis.paused
+  });
+  
+  // 3. Voces disponibles
+  const voices = speechSynthesis.getVoices();
+  console.log('3. Total voces disponibles:', voices.length);
+  
+  if (voices.length === 0) {
+    console.warn('⚠️ No hay voces disponibles. Intentando recargar...');
+    // Forzar recarga de voces
+    speechSynthesis.onvoiceschanged = () => {
+      const newVoices = speechSynthesis.getVoices();
+      console.log('🔄 Voces recargadas:', newVoices.length);
+    };
+    return;
+  }
+  
+  // 4. Voz seleccionada
+  console.log('4. Voz seleccionada:', selectedVoice ? {
+    name: selectedVoice.name,
+    lang: selectedVoice.lang,
+    localService: selectedVoice.localService,
+    default: selectedVoice.default,
+    voiceURI: selectedVoice.voiceURI
+  } : 'Ninguna');
+  
+  // 5. Estado de la aplicación
+  console.log('5. Estado aplicación:', {
+    isSpeechEnabled,
+    availableVoicesCount: availableVoices.length
+  });
+  
+  // 6. Prueba básica de audio
+  console.log('6. Iniciando prueba básica de audio...');
+  testBasicAudio();
+};
+
+/**
+ * Prueba básica de audio para verificar permisos y funcionamiento
+ */
+function testBasicAudio() {
+  try {
+    // Crear una prueba muy simple
+    const testUtterance = new SpeechSynthesisUtterance('Test');
+    testUtterance.volume = 1.0;
+    testUtterance.rate = 1.0;
+    testUtterance.pitch = 1.0;
+    
+    // Usar voz por defecto del sistema
+    const defaultVoice = speechSynthesis.getVoices().find(voice => voice.default) || 
+                        speechSynthesis.getVoices()[0];
+    
+    if (defaultVoice) {
+      testUtterance.voice = defaultVoice;
+      console.log('🎤 Probando con voz por defecto:', defaultVoice.name);
+    }
+    
+    testUtterance.onstart = () => {
+      console.log('✅ Prueba de audio INICIADA - El audio debería funcionar');
+    };
+    
+    testUtterance.onend = () => {
+      console.log('✅ Prueba de audio COMPLETADA');
+    };
+    
+    testUtterance.onerror = (event) => {
+      console.error('❌ Error en prueba de audio:', event.error);
+      
+      // Sugerencias basadas en el tipo de error
+      switch(event.error) {
+        case 'not-allowed':
+          console.log('💡 SOLUCIÓN: Verifica los permisos de audio en el navegador');
+          break;
+        case 'network':
+          console.log('💡 SOLUCIÓN: Problema de red, intenta con voz local');
+          break;
+        case 'synthesis-unavailable':
+          console.log('💡 SOLUCIÓN: Síntesis no disponible, reinicia el navegador');
+          break;
+        case 'interrupted':
+          console.log('💡 SOLUCIÓN: Audio interrumpido, verifica que no haya otras reproducciones');
+          break;
+        default:
+          console.log('💡 SOLUCIÓN: Error desconocido, verifica configuración de audio del sistema');
+      }
+    };
+    
+    // Cancelar cualquier reproducción anterior
+    speechSynthesis.cancel();
+    
+    // Esperar un poco y reproducir
+    setTimeout(() => {
+      console.log('🔊 Ejecutando speechSynthesis.speak()...');
+      speechSynthesis.speak(testUtterance);
+    }, 100);
+    
+  } catch (error) {
+    console.error('❌ Error al crear prueba de audio:', error);
+  }
+}
 
 /**
  * Detiene la reproducción de voz actual
