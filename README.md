@@ -14,24 +14,17 @@ docker-compose -f docker-compose.yml up --build # para producción
 
 ```
 TAREAS
-- [ ] Dejar fijo una version de flujo del flowise que funcione con el archivo json
-- [ ] Calibrar ambientes para desarrollo, produccion , test, con docusaurus y flowise
-- [ ] Terminar tesis con normas apa y anexos , incluir docusaurus en marco teorico 
-
-
-Tecnica par levantar el proyecto
-    Docker 
-    - Mysql
-     La primera vez se copia el init.sql y se crea la base de datos y es persistente
-    - Backend 
-     Se monta y se conecta en docker
-    - Flowise 
-     Monta en un docker persistente se carga manualmente el flujo para la version del flowise configuarar pa cargar credenciales manualmente.
-    - Frontend 
-     Se conecta automaticamente
-    -Chat enbebible
-     (probar en una pagina web externa) configurar a mano 
-
+- [ ] Calibrar ambientes para desarrollo, produccion , test, con docusaurus y flowise con Docker
+- [ ] Dejar fijo la voz
+- [ ] Aplicar filtro a la respuesta por voz (quitar asteriscos)
+- [ ] Que el audio se detenga al enviar un nuevo mensaje
+- [ ] Registrar las preguntas y respuestas del chat (a ser posible de flowise)
+- [ ] Guardar los registros de pregunta y respeusta desde el flowise en la base de datos
+- [ ] Calibrar los pronts.
+- [ ] Diseño del chatbot embebido con .gif
+- [ ] Asegurar con jwt los servicios de backend
+- [ ] Asegurar con jwt los servicios de frontend
+- [ ] Asegurar con jwt los servicios de flowise
 
 #### Prompts a analizar.
 
