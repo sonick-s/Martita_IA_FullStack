@@ -8,24 +8,27 @@ La documentacion tecnica (Manual Tecnico y de Usuario) solo se levantara cuando 
 ## Levantar el proyecto en diferentes ambiente
 
 ```bash
-docker-compose -f docker-compose.dev.yml up --build --force-recreate # para desarrollo
-docker-compose -f docker-compose.test.yml up --build # para pruebas
-docker-compose -f docker-compose.yml up --build # para producción
+docker-compose -f docker-compose.dev.yml up --build --force-recreate -d # para desarrollo
+docker-compose -f docker-compose.test.yml up --build -d # para pruebas
+docker-compose -f docker-compose.yml up --build -d # para producción
 
 ```
 TAREAS
+Omar
 - [ ] Calibrar ambientes para desarrollo, produccion , test, con docusaurus y flowise con Docker
-- [ ] Dejar fijo la voz
-- [ ] Aplicar filtro a la respuesta por voz (quitar asteriscos)
-- [ ] Que el audio se detenga al enviar un nuevo mensaje
 - [ ] Registrar las preguntas y respuestas del chat (a ser posible de flowise)
-- [ ] Guardar los registros de pregunta y respeusta desde el flowise en la base de datos
 - [ ] Calibrar los pronts.
-- [ ] Diseño del chatbot embebido con .gif
 - [ ] Asegurar con jwt los servicios de backend
 - [ ] Asegurar con jwt los servicios de frontend
 - [ ] Asegurar con jwt los servicios de flowise
+- [ ] Completar los manuales tecnico y de usuario
 
+Jean
+- [ ] Implementar la pagina en php igualita a la del Municipio o clonar XD y con el docker levantado y le implementar el servicio martitachatbot.js
+- [ ] Dejar fijo la voz
+- [ ] Aplicar filtro a la respuesta por voz (quitar asteriscos)
+- [ ] Que el audio se detenga al enviar un nuevo mensaje
+- [ ] Diseño del chatbot embebido con .gif
 #### Prompts a analizar.
 
 Primer 

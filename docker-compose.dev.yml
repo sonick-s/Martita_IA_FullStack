@@ -40,7 +40,6 @@ services:
       - .env
     volumes:
       - "${FLOWISE_DATA}:/root/.flowise"
-      - "${EMBEDDINGS_DATA}:/app/data"
     restart: unless-stopped
     depends_on:
       - backend
@@ -61,6 +60,30 @@ services:
       - CHOKIDAR_USEPOLLING=true      
     depends_on:
       - backend
+
+  manual_usuario:
+    build:
+      context: ./Manual_Usuario
+      dockerfile: Dockerfile
+    ports:
+      - "${HOST_PORT_Usuario}:3000"
+    volumes:
+      - ./Manual_Usuario:/app
+    command: ["npx", "docusaurus", "start", "--host", "0.0.0.0"]
+    environment:
+      - PORT=3000
+
+  manual_tecnico:
+    build:
+      context: ./Manual_Tecnico
+      dockerfile: Dockerfile
+    ports:
+      - "${HOST_PORT_Tecnico}:3000"
+    volumes:
+      - ./Manual_Tecnico:/app
+    command: ["npx", "docusaurus", "start", "--host", "0.0.0.0"]
+    environment:
+      - PORT=3000
 
 networks:
   default:
