@@ -5,19 +5,31 @@ La documentacion tecnica (Manual Tecnico y de Usuario) solo se levantara cuando 
 
 
 
-## Levantar el proyecto en diferentes ambiente
+## Proceso para levantar el proyecto 
+-Clona el repositorio
+-Configura las variables de entorno en el archivo .env
 
+Usa docker en sus diferentes ambientes para levantarlos
 ```bash
 docker-compose -f docker-compose.dev.yml up --build --force-recreate -d # para desarrollo
 docker-compose -f docker-compose.test.yml up --build -d # para pruebas
 docker-compose -f docker-compose.yml up --build -d # para producción
 
 ```
+!!! caution "CUIDADO: Flowise🤔"
+    Si el flowise se levanta pero no funciona al cargar el chatflow, debes crear el flujo manualmente y configurarlo , no olvides los prompts.
+---
+Flowise
+- Accede a la url http://localhost:3000
+- Inicia sesión con el usuario admin y la contraséna admin
+- Importa el archivo Martita_Chatflow.json
+
+
 TAREAS
 Omar
 - [ ] Calibrar ambientes para desarrollo, produccion , test, con docusaurus y flowise con Docker
 - [ ] Registrar las preguntas y respuestas del chat (a ser posible de flowise)
-- [ ] Calibrar los pronts.
+- [*] Calibrar los pronts.
 - [ ] Asegurar con jwt los servicios de backend
 - [ ] Asegurar con jwt los servicios de frontend
 - [ ] Asegurar con jwt los servicios de flowise
