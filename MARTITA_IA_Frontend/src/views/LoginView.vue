@@ -1,7 +1,7 @@
 <template>
   <div class="split-screen-container">
     <div class="left-pane">
-      <img src="@/assets/saludo.png" alt="Logo de Martita AI" class="vue-logo" />
+      <img src="@/assets/saludoMano.gif" alt="Logo de Martita AI" class="vue-logo" />
     </div>
 
     <div class="right-pane">
@@ -67,34 +67,91 @@ const handleLogin = async () => {
 .split-screen-container {
   display: flex;
   width: 100%;
-  height: 100vh;
-}
-
-.left-pane {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #f0f2f5;
+  min-height: 100vh;
+  flex-wrap: wrap;
   position: relative;
   overflow: hidden;
 }
 
+/* Infinite border animation */
+@keyframes borderAnimation {
+  0% {
+    background-position: 0 0, 0 100%, 0 0, 100% 0;
+  }
+  100% {
+    background-position: 100% 0, 0 100%, 0 0, 100% 100%;
+  }
+}
+
+.split-screen-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(90deg, #2d7b00 2px, transparent 2px) 0 0,
+    linear-gradient(90deg, #2d7b00 2px, transparent 2px) 0 100%,
+    linear-gradient(0deg, #2d7b00 2px, transparent 2px) 0 0,
+    linear-gradient(0deg, #2d7b00 2px, transparent 2px) 100% 0;
+  background-size: 20px 20px;
+  background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+  z-index: 0;
+  animation: borderAnimation 20s linear infinite;
+  pointer-events: none;
+}
+
+.left-pane {
+  flex: 1 1 45%;
+  min-width: 300px;
+  min-height: 50vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #ffffff;
+  position: relative;
+  padding: 2rem;
+  z-index: 1;
+}
+
 .vue-logo {
-  width: 70%;
+  width: 100%;
   max-width: 500px;
   height: auto;
-  filter: drop-shadow(0 0 50px rgba(45, 123, 0, 0.923));
+  filter: drop-shadow(0 0 30px rgba(45, 123, 0, 0.5));
+  transition: transform 0.3s ease;
+}
+
+.vue-logo:hover {
+  transform: scale(1.05);
+}
+
+.right-pane {
+  flex: 1 1 55%;
+  min-width: 300px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #ffffff;
+  padding: 2rem;
   position: relative;
   z-index: 1;
 }
 
-.right-pane {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #f0f2f5;
+@media (max-width: 768px) {
+  .left-pane, .right-pane {
+    flex: 1 1 100%;
+    min-height: auto;
+  }
+  
+  .left-pane {
+    padding: 4rem 2rem;
+  }
+  
+  .vue-logo {
+    max-width: 300px;
+  }
 }
 
 .login-card {
@@ -102,7 +159,8 @@ const handleLogin = async () => {
   width: 100%;
   padding: 2.5rem;
   border-radius: 12px;
-  background-color: white;
+  border-color: black;
+  background-color: rgba(45, 123, 0, 0.171);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   margin: 1rem;
   box-sizing: border-box;
