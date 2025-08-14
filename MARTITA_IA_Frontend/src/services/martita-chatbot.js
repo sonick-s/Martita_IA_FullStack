@@ -102,69 +102,39 @@ function initializeSpeechSynthesis() {
       try {
         // Obtener todas las voces disponibles
         const allVoices = speechSynthesis.getVoices();
-        console.log('🎤 Total de voces disponibles:', allVoices.length);
         
-        // Filtrar voces en español e inglés
-        availableVoices = allVoices.filter(voice =>
-          voice.lang.startsWith('es') || voice.lang.startsWith('en')
-        );
-        
-        console.log('🎤 Voces filtradas (es/en):', availableVoices.length);
-        availableVoices.forEach(voice => {
-          console.log(`   - ${voice.name} (${voice.lang}) - Local: ${voice.localService}`);
+        // Filtrar solo voces en español y que sean femeninas
+        availableVoices = allVoices.filter(voice => {
+          const voiceName = voice.name.toLowerCase();
+          const isSpanish = voice.lang.startsWith('es');
+          const isFemale = 
+            voiceName.includes('helena') || 
+            voiceName.includes('sabina') ||
+            voiceName.includes('mujer') ||
+            voiceName.includes('female') ||
+            voiceName.endsWith('a') && 
+            !voiceName.includes('jorge') && 
+            !voiceName.includes('pablo') &&
+            !voiceName.includes('carlos') &&
+            !voiceName.includes('diego') &&
+            !voiceName.includes('juan') &&
+            !voiceName.includes('hombre') &&
+            !voiceName.includes('male');
+          
+          return isSpanish && isFemale;
         });
-
+        
+        // Si no hay voces femeninas, mostrar advertencia y no seleccionar ninguna
         if (availableVoices.length === 0) {
-          console.warn('⚠️ No se encontraron voces en español o inglés');
+          console.warn('⚠️ No se encontraron voces femeninas en español');
+          // Mostrar todas las voces disponibles para depuración
+          console.log('🔊 Voces disponibles en el sistema:', allVoices.map(v => `${v.name} (${v.lang})`).join(', '));
           return;
         }
-
-        // Buscar voces femeninas (priorizar nombres específicos)
-        const femaleVoiceNames = [
-          'Helena', 'Sabina', 'Mónica', 'Paloma', 'Carmen', 'Isabel', // Español
-          'Zira', 'Eva', 'Lucia', 'Paulina', 'Esperanza', 'Marisol',
-          'Samantha', 'Victoria', 'Allison', 'Ava', 'Susan', 'Joanna', // Inglés
-          'Salli', 'Kimberly', 'Kendra', 'Ivy', 'Emma', 'Amy'
-        ];
-
-        // Estrategia de selección de voz con múltiples fallbacks
-        selectedVoice = 
-          // 1. Voz femenina específica en español
-          availableVoices.find(voice => 
-            femaleVoiceNames.some(name => voice.name.includes(name)) && 
-            voice.lang.startsWith('es')
-          ) || 
-          // 2. Cualquier voz femenina en español
-          availableVoices.find(voice => 
-            (voice.name.toLowerCase().includes('female') || 
-             voice.name.toLowerCase().includes('woman') ||
-             voice.name.toLowerCase().includes('mujer') ||
-             voice.name.endsWith('a')) && 
-            voice.lang.startsWith('es')
-          ) ||
-          // 3. Cualquier voz en español
-          availableVoices.find(voice => voice.lang.startsWith('es')) ||
-          // 4. Voz femenina específica en inglés
-          availableVoices.find(voice => 
-            femaleVoiceNames.some(name => voice.name.includes(name)) && 
-            voice.lang.startsWith('en')
-          ) ||
-          // 5. Cualquier voz femenina en inglés
-          availableVoices.find(voice => 
-            (voice.name.toLowerCase().includes('female') || 
-             voice.name.toLowerCase().includes('woman')) && 
-            voice.lang.startsWith('en')
-          ) ||
-          // 6. Cualquier voz en inglés
-          availableVoices.find(voice => voice.lang.startsWith('en')) ||
-          // 7. Fallback final: primera voz disponible
-          availableVoices[0];
-
-        if (selectedVoice) {
-          console.log('✅ Voz seleccionada:', selectedVoice.name, '- Idioma:', selectedVoice.lang, '- Local:', selectedVoice.localService);
-        } else {
-          console.error('❌ No se pudo seleccionar ninguna voz');
-        }
+        
+        // Seleccionar la primera voz femenina disponible
+        selectedVoice = availableVoices[0];
+        console.log('✅ Voz femenina seleccionada:', selectedVoice.name, '- Idioma:', selectedVoice.lang);
       } catch (error) {
         console.error('❌ Error al cargar voces:', error);
       }
@@ -175,9 +145,6 @@ function initializeSpeechSynthesis() {
     
     // También cargar cuando cambien las voces disponibles
     speechSynthesis.onvoiceschanged = loadVoices;
-    
-    // Timeout para asegurar que las voces se carguen
-    setTimeout(loadVoices, 100);
   } else {
     console.error('❌ SpeechSynthesis no está disponible en este navegador');
   }
@@ -187,7 +154,16 @@ function initializeSpeechSynthesis() {
  * Reproduce el texto usando síntesis de voz con manejo robusto de errores
  */
 function speakText(text) {
-  console.log('🔊 speakText() llamada con texto:', text?.substring(0, 50) + '...');
+  // Limpiar el texto antes de procesarlo
+  const cleanText = cleanTextForSpeech(text);
+  
+  // Verificar si el texto está vacío después de limpiar
+  if (!cleanText) {
+    console.log('🔇 speakText() ignorada - Texto vacío después de limpiar');
+    return;
+  }
+  
+  console.log('🔊 speakText() llamada con texto:', cleanText?.substring(0, 50) + (cleanText?.length > 50 ? '...' : ''));
   console.log('🔊 Estado de voz - isSpeechEnabled:', isSpeechEnabled);
   console.log('🔊 speechSynthesis disponible:', !!speechSynthesis);
   console.log('🔊 selectedVoice:', selectedVoice?.name || 'No seleccionada');
@@ -197,14 +173,22 @@ function speakText(text) {
     console.log('❌ speakText() cancelada - Voz deshabilitada');
     return;
   }
+  
+  // Verificar que tenemos una voz femenina seleccionada
+  if (!selectedVoice) {
+    console.log('❌ speakText() cancelada - No hay voz femenina disponible');
+    // Intentar reinicializar por si acaso
+    initializeSpeechSynthesis();
+    return;
+  }
 
   if (!speechSynthesis) {
     console.log('❌ speakText() cancelada - SpeechSynthesis no disponible');
     return;
   }
 
-  if (!text || text.trim() === '') {
-    console.log('❌ speakText() cancelada - Texto vacío');
+  if (!cleanText) {
+    console.log('❌ speakText() cancelada - Texto vacío después de limpiar');
     return;
   }
 
@@ -232,10 +216,10 @@ function speakText(text) {
       
       // Esperar un poco antes de continuar
       setTimeout(() => {
-        performSpeech(text);
+        performSpeech(cleanText);
       }, 100);
     } else {
-      performSpeech(text);
+      performSpeech(cleanText);
     }
   } catch (error) {
     console.error('❌ Error general en speakText:', error);
@@ -495,10 +479,19 @@ export const initChatbot = async () => {
             showAvatar: true,
             avatarSrc: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyQzIgMTcuNTIgNi40OCAyMiAxMiAyMkMxNy41MiAyMiAyMiAxNy41MiAyMiAxMkMyMiA2LjQ4IDE3LjUyIDIgMTIgMloiIGZpbGw9IiM2Yzc1N2QiLz4KPHBhdGggZD0iTTEyIDZDNi40OCA2IDIgMTAuNDggMiAxNkMyIDIxLjUyIDYuNDggMjYgMTIgMjZDMjEuNTIgMjYgMjYgMjEuNTIgMjYgMTZDMjYgMTAuNDggMjEuNTIgNiAxMiA2WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTEwIDExQzEwIDEwLjQ0NyAxMC40NDcgMTAgMTEgMTBIMTNDMTMuNTUzIDEwIDE0IDEwLjQ0NyAxNCAxMUMxNCAxMS41NTMgMTMuNTUzIDEyIDEzIDEySDExQzEwLjQ0NyAxMiAxMCAxMS41NTMgMTAgMTFaIiBmaWxsPSIjNmM3NTdkIi8+CjxwYXRoIGQ9Ik04IDE0QzggMTMuNDQ3IDguNDQ3IDEzIDkgMTNIMTVDMTUuNTUzIDEzIDE2IDEzLjQ0NyAxNiAxNEMxNiAxNC41NTMgMTUuNTUzIDE1IDE1IDE1SDlDOC40NDcgMTUgOCAxNC41NTMgOCAxNFoiIGZpbGw9IiM2Yzc1N2QiLz4KPHBhdGggZD0iTTEyIDE4QzEwLjkgMTggMTAgMTcuMSAxMCAxNkMxMCAxNC45IDEwLjkgMTQgMTIgMTRDMTMuMSAxNCAxNCAxNC45IDE0IDE2QzE0IDE3LjEgMTMuMSAxOCAxMiAxOFoiIGZpbGw9IiM2Yzc1N2QiLz4KPC9zdmc+',
           },
+          feedback: {
+            color: '#303235'
+        },
           textInput: {
             placeholder: 'Escribe tu pregunta aquí...',
             sendButtonColor: '#42b983',
           },
+          footer: {
+            textColor: '#303235',
+            text: 'Powered by',
+            company: 'Jean de la Cruz y Omar Sani',
+            companyLink: 'https://flowiseai.com'
+        }
         }
       }
     });
@@ -558,31 +551,59 @@ export const isChatbotInitialized = () => {
 // === FUNCIONES DE VOZ ===
 
 /**
- * Obtiene las voces disponibles
+ * Limpia el texto para síntesis de voz, eliminando caracteres especiales, emojis, etc.
+ * @param {string} text - Texto a limpiar
+ * @returns {string} Texto limpio para síntesis de voz
  */
-export const getAvailableVoices = () => {
-  return availableVoices;
-};
+function cleanTextForSpeech(text) {
+  if (!text || typeof text !== 'string') return '';
+  
+  // Eliminar emojis
+  let cleaned = text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}]/gu, '');
+  
+  // Eliminar caracteres especiales como * ** _ __ ~ ` etc.
+  cleaned = cleaned.replace(/[\*_~`]+/g, '');
+  
+  // Eliminar URLs
+  cleaned = cleaned.replace(/https?:\/\/[^\s]+/g, '');
+  
+  // Eliminar correos electrónicos
+  cleaned = cleaned.replace(/[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}/g, '');
+  
+  // Eliminar múltiples espacios, saltos de línea y tabulaciones
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  
+  // Eliminar signos de puntuación repetidos
+  cleaned = cleaned.replace(/([.,!?])\1+/g, '$1');
+  
+  // Eliminar espacios antes de signos de puntuación
+  cleaned = cleaned.replace(/\s+([.,!?])/g, '$1');
+  
+  // Asegurar que los signos de puntuación tengan espacios después
+  cleaned = cleaned.replace(/([.,!?])([^\s])/g, '$1 $2');
+  
+  console.log('Texto limpio para voz:', cleaned);
+  return cleaned;
+}
 
 /**
- * Cambia la voz seleccionada
+ * Obtiene la voz actualmente seleccionada
  */
-export const setSelectedVoice = (voiceIndex) => {
-  if (availableVoices[voiceIndex]) {
-    selectedVoice = availableVoices[voiceIndex];
-    console.log('Voz cambiada a:', selectedVoice.name);
-  }
-};
+function getSelectedVoice() {
+  return selectedVoice;
+}
 
 /**
  * Habilita o deshabilita la síntesis de voz
  */
-export const toggleSpeech = (enabled) => {
+function toggleSpeech(enabled) {
   isSpeechEnabled = enabled;
-  if (!enabled) {
-    speechSynthesis?.cancel();
+  console.log(`🔊 Voz ${enabled ? 'habilitada' : 'deshabilitada'}`);
+  
+  // Si se está desactivando, detener cualquier reproducción en curso
+  if (!enabled && speechSynthesis) {
+    stopSpeech();
   }
-  console.log('Síntesis de voz:', enabled ? 'habilitada' : 'deshabilitada');
 };
 
 /**

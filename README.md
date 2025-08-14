@@ -11,6 +11,7 @@ La documentacion tecnica (Manual Tecnico y de Usuario) solo se levantara cuando 
 
 Usa docker en sus diferentes ambientes para levantarlos
 ```bash
+docker-compose -f docker-compose.dev.yml up -d --build #Reconstruccion rapida en desarrollo
 docker-compose -f docker-compose.dev.yml up --build --force-recreate -d # para desarrollo
 docker-compose -f docker-compose.test.yml up --build -d # para pruebas
 docker-compose -f docker-compose.yml up --build -d # para producción
