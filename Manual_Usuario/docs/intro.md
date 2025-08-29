@@ -15,8 +15,8 @@ sidebar_position: 1
 
 ## Video de Presentación
 
-<video width="100%" height="100%" controls>
-  <source src="/videos/mi_video.mp4" type="video/mp4" />
+<video width="100%" height="auto" controls>
+  <source src="/videos/Introduccion_Martita_IA.mp4" type="video/mp4" />
   Tu navegador no soporta el elemento video.
 </video>
 
@@ -36,7 +36,7 @@ El desarrollo de "Martita IA" surge como una solución a las deficiencias identi
 En este video te mostramos paso a paso cómo registrarte en el sistema de Martita IA, una herramienta diseñada para facilitar la gestión de trámites y servicios en el Municipio de Cayambe. Aprenderás a crear tu cuenta de forma sencilla y rápida.
 
 <video width="100%" height="100%" controls>
-  <source src="/videos/mi_video.mp4" type="video/mp4" />
+  <source src="/videos/InicarSesionMartitaIA.mp4" type="video/mp4" />
   Tu navegador no soporta el elemento video.
 </video>
 
@@ -46,7 +46,7 @@ En este video te mostramos paso a paso cómo registrarte en el sistema de Martit
 Aquí aprenderás cómo cargar y gestionar las direcciones o departamentos del Municipio de Cayambe en el sistema de Martita IA. Este proceso es fundamental para organizar la información institucional y mantener un control eficiente de las áreas administrativas.
 
 <video width="100%" height="100%" controls>
-  <source src="/videos/mi_video.mp4" type="video/mp4" />
+  <source src="/videos/DireccionesMunicipales.mp4" type="video/mp4" />
   Tu navegador no soporta el elemento video.
 </video>
 
@@ -55,6 +55,6 @@ Aquí aprenderás cómo cargar y gestionar las direcciones o departamentos del M
 Este video te guiará en el proceso para cargar y administrar los trámites del Municipio de Cayambe. Descubrirás cómo ingresar correctamente la información relacionada con cada trámite, facilitando la atención y el seguimiento de los servicios ciudadanos.
 
 <video width="100%" height="100%" controls>
-  <source src="/videos/mi_video.mp4" type="video/mp4" />
+  <source src="/videos/TramitesMunicipales.mp4" type="video/mp4" />
   Tu navegador no soporta el elemento video.
 </video>
