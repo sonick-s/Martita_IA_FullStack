@@ -4,32 +4,29 @@ import styles from './styles.module.css';
 
 const FeatureList = [
   {
-    title: 'Easy to Use',
+    title: 'Creada por',
     Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
     description: (
       <>
-        Docusaurus was designed from the ground up to be easily installed and
-        used to get your website up and running quickly.
+        Martita_IA Fue Creada en el proyecto de tesis de Jean de la Cruz y Omar Sani 2025 
       </>
     ),
   },
   {
-    title: 'Focus on What Matters',
+    title: 'Martita_IA ',
     Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
     description: (
       <>
-        Docusaurus lets you focus on your docs, and we&apos;ll do the chores. Go
-        ahead and move your docs into the <code>docs</code> directory.
+        Martita_IA Te permite gestionar Informacion de tramies que serviran como Guia; para los ciudadanos.
       </>
     ),
   },
   {
-    title: 'Powered by React',
+    title: 'Fue Creada con Las Siguientes tecnologias',
     Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
     description: (
       <>
-        Extend or customize your website layout by reusing React. Docusaurus can
-        be extended while reusing the same header and footer.
+        Vue.js, Node.js 22.12.0, Python 3.12.0,Fast Api, Faiss , Mysql, Flowise, Docker, Api de Gemini, Esfuerzo y Lagrimas :).
       </>
     ),
   },

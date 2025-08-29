@@ -10,8 +10,8 @@ import {themes as prismThemes} from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'My Site',
-  tagline: 'Dinosaurs are cool',
+  title: 'Martita IA Manual Usuario',
+  tagline: 'Es un asistente virtual con inteligencia artificial creado para servir como guía y orientador de los ciudadanos en los trámites del Municipio de Cayambe "Ultima Actualizacion 01/08/2025"',
   favicon: 'img/favicon.ico',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
